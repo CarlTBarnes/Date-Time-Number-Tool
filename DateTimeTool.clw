@@ -158,8 +158,8 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                         'Leading Character<13,10>Many do not work, they are provided to try them')
                 BUTTON('&Separator'),AT(186,16,35,11),USE(?DateSepBtn),SKIP,FONT(,8),TIP('Select the' & |
                         ' Separator Character<13,10>Many do not work, they are provided to try them')
-                ENTRY(@s16),AT(9,46,84,9),USE(DOW),SKIP,CENTER,COLOR(COLOR:BTNFACE),READONLY
-                ENTRY(@d4),AT(9,56,84,9),USE(TheDate,, ?TheDateLong),SKIP,CENTER,COLOR(COLOR:BTNFACE), |
+                ENTRY(@s16),AT(9,46,84,10),USE(DOW),SKIP,CENTER,COLOR(COLOR:BTNFACE),READONLY
+                ENTRY(@d4),AT(9,59,84,10),USE(TheDate,, ?TheDateLong),SKIP,CENTER,COLOR(COLOR:BTNFACE), |
                         READONLY
                 BUTTON,AT(8,79,14,10),USE(?MinusYear),SKIP,FONT(,8),ICON(ICON:VCRrewind),TIP('Back 1 Year')
                 BUTTON,AT(24,79,13,10),USE(?MinusMonth),SKIP,FONT(,8),ICON(ICON:VCRback),TIP('Back 1' & |
@@ -268,6 +268,8 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                 BUTTON,AT(180,2,14,11),USE(?CopyHolidayBtn),SKIP,ICON(ICON:Copy),TIP('Copy Selected ' & |
                         'Holiday as a "Date EQUATE()" to Clipboard')
                 PROMPT('&Year:'),AT(7,19),USE(?Prompt14)
+                PROMPT('A better Holiday Calculator availbale on GitHub<0Dh,0Ah>GitHub.com/CarlTBarn' & |
+                        'es/Holiday-Calculator'),AT(135,16,151,13),USE(?GitHubHolidayRepo),FONT(,8),CENTER
                 SPIN(@n_4),AT(25,18,38,10),USE(HolidayYear),HVSCROLL
                 STRING('Leap Year!'),AT(69,19),USE(?LeapYearTxt),FONT(,,,FONT:bold)
                 LIST,AT(8,31,292,154),USE(?List:HolidayQ),VSCROLL,FONT(,10),FROM(HolidayQ), |
@@ -342,7 +344,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
             END
         END
         BUTTON('ReRun'),AT(251,2,30,10),USE(?ReRunBtn),SKIP,FONT(,8),TIP('Run another instance thread')
-        BUTTON('Halt'),AT(288,2,19,10),USE(?HaltBtn),SKIP,FONT(,8),TIP('Halt all instance threads')
+        BUTTON('Halt'),AT(288,2,19,10),USE(?HaltBtn),SKIP,FONT(,8),TIP('Halt all instance threads'),HIDE
     END
 
     CODE
@@ -357,7 +359,8 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
         WndPrvCls.Init(2)               !Design Window at Runtime using CBWndPreviewClass with invisible button at top   
              !* WndPrvCls * COMPILE
 
-    ?ReRunBtn{PROP:Tip}=?ReRunBtn{PROP:Tip} &'<13,10>'& Command('0')  !show EXE Name in ReRUn Tip        
+    ?ReRunBtn{PROP:Tip}=?ReRunBtn{PROP:Tip} &'<13,10>'& Command('0')  !show EXE Name in ReRUn Tip
+    IF THREAD()>1 THEN UNHIDE(?HaltBtn).
     0{PROP:StatusText,1}=TheDate &'  '& DOWname(TheDate) &' '& CLIP(FORMAT(TheDate,@d4))
     0{PROP:StatusText,2}='EXE RTL ' & SYSTEM{PROP:ExeVersion,2} &'.'& SYSTEM{PROP:ExeVersion,3} & |
                        ', DLL RTL ' & SYSTEM{PROP:LibVersion,2} &'.'& SYSTEM{PROP:LibVersion,3}
@@ -551,8 +554,8 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
               display
            END 
 
-        OF ?ReRunBtn ; START(Main)
-        OF ?HaltBtn  ; IF 1=Message('Terminate the Date Tool?','Date Tool',ICON:Hand,'Keep Open|Halt Tool') THEN CYCLE.
+        OF ?ReRunBtn ; START(Main) ; UNHIDE(?HaltBtn)
+        OF ?HaltBtn  ; IF 1=Message('Terminate this Tool?',0{PROP:Text},ICON:Hand,'Keep Open|Halt Tool') THEN CYCLE.
                        LOOP Ndx=1 TO 64 ; POST(EVENT:CloseWindow,,Ndx,1) ; END
         END
         CASE FIELD()
