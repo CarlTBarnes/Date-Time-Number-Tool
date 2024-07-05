@@ -59,7 +59,13 @@ Pic         cstring(7)  !@d000-
 Format      STRING(20)  !mm/dd/yy
 Value       STRING(20)  !9/22/03
         end
-TheTime     TIME        
+TheTime     TIME
+            GROUP,OVER(TheTime),PRE(TheTm)
+Cent          BYTE  ! TheTm:Cent    1/100's
+Secs          BYTE  ! TheTm:Secs
+Mins          BYTE  ! TheTm:Mins
+Hrs           BYTE  ! TheTm:Hrs
+            END
 TimeLeading     STRING(' ')
 TimeSeparator   STRING(' ')
 
@@ -273,7 +279,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                 BUTTON,AT(180,2,14,11),USE(?CopyHolidayBtn),SKIP,ICON(ICON:Copy),TIP('Copy Selected ' & |
                         'Holiday as a "Date EQUATE()" to Clipboard')
                 PROMPT('&Year:'),AT(7,19),USE(?Prompt14)
-                PROMPT('A better Holiday Calculator availbale on GitHub<0Dh,0Ah>GitHub.com/CarlTBarn' & |
+                PROMPT('A better Holiday Calculator available on GitHub<0Dh,0Ah>GitHub.com/CarlTBarn' & |
                         'es/Holiday-Calculator'),AT(135,16,151,13),USE(?GitHubHolidayRepo),FONT(,8),CENTER
                 SPIN(@n_4),AT(25,18,38,10),USE(HolidayYear),HVSCROLL
                 STRING('Leap Year!'),AT(69,19),USE(?LeapYearTxt),FONT(,,,FONT:bold)
@@ -355,7 +361,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
     CODE
     SYSTEM{PROP:MsgModeDefault}=MSGMODE:CANCOPY  ;  SYSTEM{7A58h}=1 !is PROP:PropVScroll added C11 
     SYSTEM{PROP:FontName}='Segoe UI' ; SYSTEM{PROP:FontSize}=12 
-    TheDate = TODAY() ; TheTime = CLOCK()
+    TheDate = TODAY() ; TheTime = INT((CLOCK()-1)/100) * 100 + 1    !No 1/100's
     DO BuildNumberQRtn    
     DO LoadTimeQRtn
     
@@ -439,7 +445,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
 
 !-- Time Tab ---------------------------------- 
         OF ?TimeNowBtn
-            TheTime = CLOCK()
+            TheTime = INT((CLOCK()-1)/100) * 100 + 1   !No 1/100's
             DO LoadTimeQRtn
             DISPLAY
         OF ?RefreshTimeBtn
@@ -455,11 +461,18 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
             OF MouseLeft2
                SETCLIPBOARD(TimeQ:Pic)
             OF MouseRight
-               EXECUTE POPUP('Picture ' & TimeQ:Pic & '|FORMAT( ,' & TimeQ:Pic &')'& '|EQUATE('& TheTime &')|Time_'& Format(TheTime,@t04) &'  EQUATE('& TheTime &')' )
-                 SETCLIPBOARD(TimeQ:Pic)
-                 SETCLIPBOARD('FORMAT( ,' & TimeQ:Pic & ') !' & TimeQ:Format )
-                 SETCLIPBOARD('EQUATE(' & TheTime & ')   !' & FORMAT(TheTime,TimeQ:Pic) )
-                 POST(EVENT:Accepted,?CopyTimeBtn)
+               CASE POPUP('Picture ' & TimeQ:Pic & '|FORMAT( ,' & TimeQ:Pic &')'& '|EQUATE('& TheTime &')|Time_'& Format(TheTime,@t04) &'  EQUATE('& TheTime &')|-|Time Calculation Code H*360000+M*6000...' )
+               OF 1 ; SETCLIPBOARD(TimeQ:Pic)
+               OF 2 ; SETCLIPBOARD('FORMAT( ,' & TimeQ:Pic & ') !' & TimeQ:Format )
+               OF 3 ; SETCLIPBOARD('EQUATE(' & TheTime & ')   !' & FORMAT(TheTime,TimeQ:Pic) )
+               OF 4 ; POST(EVENT:Accepted,?CopyTimeBtn)
+               OF 5
+            SETCLIPBOARD('!Time  '& FORMAT(TheTime,@t04)                 &' {13}= ' & TheTime &' = 1 + '& TheTime-1  &' /100th''s <13,10>' & | 
+                         ' Time=('& FORMAT(TheTm:Hrs ,@n2) &' * 60*60*100) + |  !3600 Seconds in 1 Hour   *100=360,000  <13,10>' &|
+                         '      ('& FORMAT(TheTm:Mins,@n2) &' *    60*100) + |  !  60 Seconds in 1 Minute *100=  6,000  <13,10>' &|
+                         '      ('& FORMAT(TheTm:Secs,@n2) &' *       100) + |  !   1 Second  in 1 Second *100=    100  <13,10>' &|
+                         '      ('& FORMAT(TheTm:Cent,@n2) &' *         1) + |  !Centiseconds i.e. 1/100th  *1=      1  <13,10>' &|
+                         '      ('&                   '  ' &'   + 1      )      !Clarion Time always +1. Zero = No Time <13,10>'   )                          
                END
             END
         
@@ -588,7 +601,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
            OF ?Tab:Time !Tab for Time
               IF FIELD()=?Sheet1        !We just changed tabs
                  IF ~TheTime
-                     TheTime = CLOCK()
+                     TheTime = INT((CLOCK()-1)/100) * 100 + 1    !No 1/100's
                      DO LoadTimeQRtn
                  END
               END
@@ -653,7 +666,7 @@ MakNegMos LONG
                 '|    M = '& MinusMos & |
                 '|    Months = (M % 12)  =  ('& MinusMos &' % 12 ) = ' &  FixMos & |
                 '|    Years = (M+1)/-12 +1  =  ('& MinusMos &'+1)/-12 +1  =  ('& MinusMos+1 &'/-12 +1) = '& FixYrs & |
-                '','DATE() Negative Months',Icon:Clarion, 'Fix Months|No Fix')
+                '','DATE() Negative Months',Icon:Clarion, '&Fix Months|&No Fix')
     OF 1 ; DateCalc_PlusMonth = FixMos
            DateCalc_PlusYear -= FixYrs 
            DO DateCalc_NetDate_Rtn ; DISPLAY
