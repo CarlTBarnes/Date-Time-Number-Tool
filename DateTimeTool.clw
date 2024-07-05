@@ -152,7 +152,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                 SPIN(@n9),AT(30,31,62,10),USE(TheDate,, ?TheDateSN),HVSCROLL,LEFT
                 LIST,AT(104,30,198,156),USE(?List:DatesQ),FONT('Consolas'),TIP('Click Headings to So' & |
                         'rt<13><10>Right Click Rows for Options'),FROM(DatesQ),FORMAT('29L(2)|FM~@d~' & |
-                        'C(0)@s7@86L(2)|M~Date Format~C(0)@s20@62L(2)|M~Format( , @d)~C(0)@s20@')
+                        'C(0)@s7@86L(2)|M~Date Format~C(0)@s20@62L(2)|M~Format(,@D)~C(0)@s20@')
                 BUTTON('&Refresh'),AT(103,16,29,11),USE(?RefreshDatesBtn),SKIP,FONT(,8)
                 BUTTON('&Leading'),AT(151,16,30,11),USE(?DateLeadBtn),SKIP,FONT(,8),TIP('Select the ' & |
                         'Leading Character<13,10>Many do not work, they are provided to try them')
@@ -183,10 +183,11 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                 STRING('@D [L] # [S] [B]'),AT(6,170),USE(?Syntax_Date)
             END
             TAB(' &Calc '),USE(?Tab:Calc)
-                GROUP,AT(5,15,269,45),USE(?Date_Calc:Grp)
+                GROUP,AT(5,15,299,45),USE(?Date_Calc:Grp)
                     PROMPT('Calc&ulate Date('),AT(6,25),USE(?DateCalculate:Prompt)
                     PROMPT('&Month'),AT(59,15,,8),USE(?DateCalc_BaseMonth:Prompt)
-                    ENTRY(@N-7),AT(60,25,28,10),USE(DateCalc_BaseMonth),RIGHT
+                    ENTRY(@N-7),AT(60,25,28,10),USE(DateCalc_BaseMonth),RIGHT,TIP('A Negative Month ' & |
+                            'will cause DATE() to Fail and Return -1')
                     STRING('/'),AT(90,15),FONT(,,,FONT:bold)
                     PROMPT('&Day'),AT(101,15,,8),USE(?DateCalc_BaseDay:Prompt)
                     ENTRY(@n-7),AT(95,25,28,10),USE(DateCalc_BaseDay),RIGHT
@@ -196,11 +197,15 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                     STRING(') = '),AT(165,26)
                     ENTRY(@n-9),AT(180,25,37,10),USE(DateCalc_BaseDate),SKIP,RIGHT
                     ENTRY(@d02b),AT(222,25,46,10),USE(DateCalc_BaseDate,, ?DateCalc_BaseDate:d2),SKIP
+                    BUTTON('Fi&x<0dh,0ah>-Mon<0dh,0ah>as<0dh,0ah>+Mos<0dh,0ah>-Years'),AT(275,20,24,37), |
+                            USE(?MonthNegativeFixBtn),SKIP,FONT(,8),TIP('Explain how to calculate Ne' & |
+                            'gative Months<13,10>that may cause DATE() to return -1<13,10>by using P' & |
+                            'ostive Months and Negative Years')
                     PROMPT('Change +/-'),AT(17,37),USE(?DateCalc_Plus:Prompt)
                     ENTRY(@N-7),AT(60,37,28,10),USE(DateCalc_PlusMonth),RIGHT
                     ENTRY(@n-7),AT(95,37,28,10),USE(DateCalc_PlusDay),RIGHT
                     ENTRY(@n-5),AT(129,37,28,10),USE(DateCalc_PlusYear),RIGHT
-                    PROMPT('Net DATE('),AT(22,49),USE(?DateCalc_Net:Prompt)
+                    PROMPT('Net Date('),AT(23,49),USE(?DateCalc_Net:Prompt)
                     ENTRY(@n-7),AT(60,49,28,10),USE(DateCalc_NetMonth),SKIP,RIGHT,COLOR(COLOR:BTNFACE), |
                             READONLY
                     ENTRY(@n-7),AT(95,49,28,10),USE(DateCalc_NetDay),SKIP,RIGHT,COLOR(COLOR:BTNFACE), |
@@ -344,7 +349,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
             END
         END
         BUTTON('ReRun'),AT(251,2,30,10),USE(?ReRunBtn),SKIP,FONT(,8),TIP('Run another instance thread')
-        BUTTON('Halt'),AT(288,2,19,10),USE(?HaltBtn),SKIP,FONT(,8),TIP('Halt all instance threads'),HIDE
+        BUTTON('Halt'),AT(288,2,19,10),USE(?HaltBtn),SKIP,FONT(,8),HIDE,TIP('Halt all instance threads')
     END
 
     CODE
@@ -432,7 +437,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
             SetClipboard('Time_' & format(TheTime,@t04)  & |
                           ' {5}EQUATE(' & TheTime & ') {5}! ' & format(TheTime,@t4) &'  '& format(TheTime,@t6) &'  '& format(TheTime,@t05) )
 
-        !--Time------------ 
+!-- Time Tab ---------------------------------- 
         OF ?TimeNowBtn
             TheTime = CLOCK()
             DO LoadTimeQRtn
@@ -458,6 +463,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                END
             END
         
+!-- Calculate Dates Tab -------------------
         OF ?DateCalc_UseDateFixed
             POST(EVENT:Accepted, ?DateCalc_BaseMonth)            
             POST(EVENT:Accepted, ?DateTwo_BaseMonth)            
@@ -469,6 +475,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
             DO DateCalc_NetDate_Rtn
         OF ?DateCalc_PlusMonth OROF ?DateCalc_PlusDay OROF ?DateCalc_PlusYear
             DO DateCalc_NetDate_Rtn
+        OF ?MonthNegativeFixBtn       ;  DO MonthNegativeFixBtnRtn
 
         OF ?DateTwo_BaseMonth OROF ?DateTwo_BaseDay OROF ?DateTwo_BaseYear
             DateTwo_BaseDate = DateOrDateFixed(DateTwo_BaseMonth,DateTwo_BaseDay,DateTwo_BaseYear)
@@ -489,7 +496,8 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
         OF ?EvalCalc_Input ; EvalCalc_Result=EVALUATE(EvalCalc_Input) 
                              IF ERRORCODE() THEN EvalCalc_Result='Error '& ErrorCode() &' '& Error() . 
                              IF ?EvalCalc_Input{PROP:Visible} THEN SELECT(?EvalCalc_Input,1).
-                        
+
+!-- Number Tab -------------------                        
         OF ?ClearNumPicBtn  ; FREE(NumberQ) ; DISPLAY 
         OF ?NumInput:Pic
                 IF LEN(CLIP(NumInput:Pic)) >2 AND NumInput:Pic[1]<>'@' THEN NumInput:Pic='@' & NumInput:Pic.
@@ -597,16 +605,61 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
         END
     end
     close(Window)
-
+!-----------------------------------------
 DateCalc_NetDate_Rtn ROUTINE
+    DATA
+Clr_RED   LONG(COLOR:Maroon)    
+Clr_WHITE LONG(COLOR:White) 
+    CODE
     DateCalc_NetMonth = DateCalc_BaseMonth + DateCalc_PlusMonth
     DateCalc_NetDay   = DateCalc_BaseDay   + DateCalc_PlusDay  
     DateCalc_NetYear  = DateCalc_BaseYear  + DateCalc_PlusYear 
     DateCalc_NetDate  = DateOrDateFixed(DateCalc_NetMonth,DateCalc_NetDay,DateCalc_NetYear)
+    IF DateCalc_PlusMonth >=0 AND DateCalc_NetMonth >=0 THEN Clr_RED = -1 ; Clr_WHITE = -1.
+    ?DateCalc_PlusMonth{PROP:Color}  = Clr_RED ; ?DateCalc_PlusMonth{PROP:FontColor}  = Clr_WHITE
+    ?MonthNegativeFixBtn{PROP:Color} = Clr_RED ; ?MonthNegativeFixBtn{PROP:FontColor} = Clr_WHITE
+    EXIT
+
 DateTwo_NetDate_Rtn ROUTINE 
     DateTwo_NetDate  = DateOrDateFixed(DateTwo_BaseMonth,DateTwo_BaseDay,DateTwo_BaseYear) + DateTwo_PlusDayz
     EXIT
 
+MonthNegativeFixBtnRtn ROUTINE  !Change a Negative Plus Month to Positive ... the make Years Negative
+    DATA
+MinusMos LONG 
+FixMos  LONG
+FixYrs  LONG
+MakNegMos LONG
+    CODE
+    SELECT(?DateCalc_PlusMonth)
+    MinusMos = DateCalc_PlusMonth    !A Shorter Variable
+    IF MinusMos >= 0 THEN 
+       MakNegMos = (DateCalc_BaseMonth * -1) - 1
+       CASE Message('The Change Month "' & MinusMos &'" is not negative so there is nonthing to Fix.' & |
+                    '||Click "Make Negative" and I''ll change Month to "' & MakNegMos &'" to create a problem.' , | 
+                    'Negative Month',,'Close|Make Negative')
+       OF 1 ; EXIT
+       OF 2 ; MinusMos = MakNegMos ; DateCalc_PlusMonth = MakNegMos ; DO DateCalc_NetDate_Rtn ; DISPLAY
+       END 
+    END
+    FixMos = MinusMos % 12              !e.g. (-1 % 12) = +11 ; (-9 % 12) = +3  remainder of year
+    FixYrs= (MinusMos+1) /-12 +1        !?? does this need an INT() function ? like  INT( (MinusMos+1) /-12) +1
+    
+    CASE Message('The Clarion DATE() function passed a Negative Month will FAIL and Return -1.' & |
+                '||Instead of Negative Months "'& MinusMos &'"' & |
+                '|Change to Positve Months  "+'& FixMos &'"' & |
+                '|Change to Negative Years   "-'& FixYrs &'"' & |    ! '|Then Add Negative Years "-'& FixYrs &'"' & |
+                '||Calculation:' & |
+                '|    M = '& MinusMos & |
+                '|    Months = (M % 12)  =  ('& MinusMos &' % 12 ) = ' &  FixMos & |
+                '|    Years = (M+1)/-12 +1  =  ('& MinusMos &'+1)/-12 +1  =  ('& MinusMos+1 &'/-12 +1) = '& FixYrs & |
+                '','DATE() Negative Months',Icon:Clarion, 'Fix Months|No Fix')
+    OF 1 ; DateCalc_PlusMonth = FixMos
+           DateCalc_PlusYear -= FixYrs 
+           DO DateCalc_NetDate_Rtn ; DISPLAY
+    END 
+    EXIT
+!-----------------------------------------
 BuildNumberQRtn        ROUTINE
     !@N [currency] [sign] [fill] size [grouping][places][sign] [currency] [B]
     !   $ or ~XX~   - (    0*_   ##    . - _     .`v ##  - )    $ or ~XX~
