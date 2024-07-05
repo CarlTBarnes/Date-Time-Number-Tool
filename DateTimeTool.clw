@@ -68,7 +68,15 @@ Hrs           BYTE  ! TheTm:Hrs
             END
 TimeLeading     STRING(' ')
 TimeSeparator   STRING(' ')
-
+!Time Equates from Mark Goldberg https://github.com/MarkGoldberg/CwUnit/blob/master/Libsrc/Time.equ
+TimeEquates     STRING(      'TIME:Tick   EQUATE(  1)                !1/100th Second' &|
+                      '<13,10>TIME:Second EQUATE(100 * TIME:Tick)    !100' &|
+                      '<13,10>TIME:Minute EQUATE( 60 * TIME:Second)  !6,000            60*100' &|
+                      '<13,10>TIME:Hour   EQUATE( 60 * TIME:Minute)  !360,000       60*60*100' &|
+                      '<13,10>TIME:Day    EQUATE( 24 * TIME:Hour  )  !8,640,000  24*60*60*100' &|
+                      '<13,10>' &|
+                      '<13,10>!FYI: Clarion Standard Time is always +1 ' &|
+                      '<13,10>!E.g. 2:30 AM = 1 + (2 * TIME:Hour) + (30 * TIME:Minute) ' )  ! Length = 400
 
 PickQ   queue,pre(pick)
 Name        string(30)      ! PickQ:Name
@@ -186,7 +194,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                     STRING(@s20),AT(11,147,81,9),USE(Weeks[5]),TRN
                     STRING(@s20),AT(11,155,81,9),USE(Weeks[6]),TRN
                 END
-                STRING('@D [L] # [S] [B]'),AT(6,170),USE(?Syntax_Date)
+                STRING('@D [L] # [S] [B]'),AT(248,17),USE(?Syntax_Date)
             END
             TAB(' &Calc '),USE(?Tab:Calc)
                 GROUP,AT(5,15,299,45),USE(?Date_Calc:Grp)
@@ -295,16 +303,18 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                 SPIN(@t06b),AT(39,33,61,10),USE(TheTime,, ?TheTimeT6),HVSCROLL,STEP(6000)
                 PROMPT('S/&N:'),AT(8,48),USE(?Prompt:TheTimeSN)
                 SPIN(@n10),AT(39,47,61,10),USE(TheTime,, ?TheTimeSN),HVSCROLL,LEFT,STEP(100)
-                BUTTON('Time No&w'),AT(8,65,83,11),USE(?TimeNowBtn),FONT(,8)
-                BUTTON('Connect to www.time.gov'),AT(8,81,83,11),USE(?ConnectTimegov),FONT(,8)
-                LIST,AT(109,30,193,90),USE(?List:TimeQ),FONT('Consolas'),FROM(TimeQ),FORMAT('28L(2)|' & |
+                BUTTON('Time No&w'),AT(8,63,86,11),USE(?TimeNowBtn),FONT(,8)
+                BUTTON('Connect to www.time.gov'),AT(8,79,86,11),USE(?ConnectTimegov),FONT(,8)
+                LIST,AT(109,30,193,75),USE(?List:TimeQ),FONT('Consolas'),FROM(TimeQ),FORMAT('28L(2)|' & |
                         'FM~@T~C(0)@s7@78L(2)|M~Time Format~C(0)@s20@62L(2)|M~Format(,@T)~C(0)@s20@')
                 BUTTON('&Refresh'),AT(108,16,30,11),USE(?RefreshTimeBtn),SKIP,FONT(,9)
                 BUTTON('&Leading'),AT(156,16,30,11),USE(?TimeLeadBtn),SKIP,FONT(,8),TIP('Select the ' & |
                         'Leading Character')
                 BUTTON('&Separator'),AT(189,16,35,11),USE(?TimeSepBtn),SKIP,FONT(,8),TIP('Select the' & |
                         ' Separator Character')
-                STRING('@T [L] # [S] [B]'),AT(6,104),USE(?Syntax_Time)
+                STRING('@T [L] # [S] [B]'),AT(249,17),USE(?Syntax_Time)
+                TEXT,AT(8,121,294,64),USE(TimeEquates),HVSCROLL,FONT('Consolas',9,COLOR:Black), |
+                        COLOR(0E1FFFFH),READONLY
             END
             TAB(' N&umber '),USE(?Tab:NumTest)
                 BUTTON,AT(180,2,14,11),USE(?CopyNumBtn),SKIP,ICON(ICON:Copy),TIP('Copy Selected Numb' & |

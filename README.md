@@ -5,7 +5,7 @@ Clarion Dates and Times are a bit tricky the way they are stored (Standard Dates
 _____
 ### Date Tab
 
-Enter a Date and see the Clarion Standard Date (days since 12/27/1800). Displays all Clarion @D Pictures. The list has click sortable headings so you can see them sorted by Date Format with all "D" day based, then "M" Month, then "N" Name and then "Y" Year. Right-click on the list for options to copy the Format or Equate.
+Enter a Date and see the Clarion Standard Date (days since 12/27/1800). Displays all Clarion @D Pictures. The list has click sortable headings so you can sort by Date Format. Right-click on the list for options to copy the Format or Equate.
 
 The Copy button above the List will place an Equate for the entered date no the clipboard to use in code instead of the DATE() function.
 ```
@@ -19,6 +19,16 @@ ___
 Test various calculations using the DATE() function and/or entered dates or date serial numbers. This allows you to verify that passing out of range (Month, Day, Year) values to  DATE() function work as expected.
 
 ![Calc tab](images/readme2.png)
+
+The DATE(m,d,y) function fails if passed a Month value of Zero or Negative and returns -1. The workaround is to Add Months and Subtract Years. There is a "Fix -Mon" button that explains the calculations.
+
+![Calc Tab Fix Mon](images/readme2n1.png)
+
+The screen capture shows subtracting 9 months from 7 will pass -2 and fail. Instead add 3 months and subtract 1 year.
+
+![Calc Tab Fix Mon](images/readme2n2.png)
+
+The formula works for any number of Negative Months e.g. -30 Months can be done as (-30 % 12) = +6 Months Added and ()(-30+1)/-12 +1 ) = 3 Years Subtracted.
 ___
 ### Holiday Dates
 
@@ -30,19 +40,21 @@ ___
 
 Enter a Time and see the Clarion Start Times (1/100 seconds since midnight + 1). Displays all Clarion @T Pictures. Right-click on the list for options to copy the Format or Equate.
 
-The Copy button above the List will place an Equate for the entered Time on the clipboard. Clarion has no TIME() function that is similar to the DATE() functions so typical code to get a Standard Time is `DEFORMAT('12:30:00',@t4)`. In the source you will find a `TimeSplit(Time, *? OutHours, ?* OutMinutes, ?* OutSeconds )` function.
+Clarion has no TIME(h,m,s) function so typical code to get a Standard Time is `DEFORMAT('12:30:00',@t4)`. The Copy button above the List will place an Equate for the entered Time on the clipboard like below:
 
 ```
 Time_12:30:00     EQUATE(4500001)     ! 12:30:00  12:30:00PM  123000
 ```
 
 ![time tab](images/readme4.png)
+
+At the bottom are Equates for the parts of Time you can copy into your code. 
 ___
 ### Number Pictures ... or Any Others @E @P @D @T @S
 
 Try out any @Picture and Value to see how it formats.
 
-You test how DeFromat() works with and without the @Picture for any Value.
+You can test how DeFromat() works with and without the @Picture for any Value.
 
 ![number tab](images/readme5.png)
 
