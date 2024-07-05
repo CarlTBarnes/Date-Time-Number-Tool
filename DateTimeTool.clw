@@ -471,18 +471,26 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
             OF MouseLeft2
                SETCLIPBOARD(TimeQ:Pic)
             OF MouseRight
-               CASE POPUP('Picture ' & TimeQ:Pic & '|FORMAT( ,' & TimeQ:Pic &')'& '|EQUATE('& TheTime &')|Time_'& Format(TheTime,@t04) &'  EQUATE('& TheTime &')|-|Time Calculation Code H*360000+M*6000...' )
+               CASE POPUP('Picture ' & TimeQ:Pic & '|FORMAT( ,' & TimeQ:Pic &')'& '|EQUATE('& TheTime &')|Time_'& Format(TheTime,@t04) &'  EQUATE('& TheTime &')' & |
+                         '|-|Time Calculation Code H*360000+M*6000...|Time Calculation using TIME: Equates' )
                OF 1 ; SETCLIPBOARD(TimeQ:Pic)
                OF 2 ; SETCLIPBOARD('FORMAT( ,' & TimeQ:Pic & ') !' & TimeQ:Format )
                OF 3 ; SETCLIPBOARD('EQUATE(' & TheTime & ')   !' & FORMAT(TheTime,TimeQ:Pic) )
                OF 4 ; POST(EVENT:Accepted,?CopyTimeBtn)
-               OF 5
+      OF 5
             SETCLIPBOARD('!Time  '& FORMAT(TheTime,@t04)                 &' {13}= ' & TheTime &' = 1 + '& TheTime-1  &' /100th''s <13,10>' & | 
                          ' Time=('& FORMAT(TheTm:Hrs ,@n2) &' * 60*60*100) + |  !3600 Seconds in 1 Hour   *100=360,000  <13,10>' &|
                          '      ('& FORMAT(TheTm:Mins,@n2) &' *    60*100) + |  !  60 Seconds in 1 Minute *100=  6,000  <13,10>' &|
                          '      ('& FORMAT(TheTm:Secs,@n2) &' *       100) + |  !   1 Second  in 1 Second *100=    100  <13,10>' &|
                          '      ('& FORMAT(TheTm:Cent,@n2) &' *         1) + |  !Centiseconds i.e. 1/100th  *1=      1  <13,10>' &|
                          '      ('&                   '  ' &'   + 1      )      !Clarion Time always +1. Zero = No Time <13,10>'   )                          
+      OF 6            
+            SETCLIPBOARD('!Time  '& FORMAT(TheTime,@t04)                 &' {13}= ' & TheTime &' = 1 + '& TheTime-1  &' <13,10>' & | 
+                         ' Time=('& FORMAT(TheTm:Hrs ,@n2) &' * TIME:Hour  ) + | <13,10>' &|
+                         '      ('& FORMAT(TheTm:Mins,@n2) &' * TIME:Minute) + | <13,10>' &|
+                         '      ('& FORMAT(TheTm:Secs,@n2) &' * TIME:Second) + | <13,10>' &|
+                         '      ('& FORMAT(TheTm:Cent,@n2) &' * TIME:Tick  ) + | <13,10>' &|
+                         '      ('&                   '  ' &'   + 1      )      !Clarion Time always +1. Zero = No Time <13,10>'   ) 
                END
             END
         
