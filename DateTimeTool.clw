@@ -12,7 +12,7 @@ WndPrvCls   CBWndPreviewClass,THREAD
 
     MAP
 Main        Procedure()
-DateFixed       PROCEDURE(long _Month,long _Day,long _Year),long
+DateFixed       PROCEDURE(long _Month,long _Day,long _Year),long        !Fixed to handle C5 - C6 problems with Month/Day out of Range
 DateAdjust      PROCEDURE(LONG InDate, LONG YearAdj=0, LONG MonthAdj=0, LONG DayAdj=0, <SHORT ForceDay>),LONG 
 DateSplit       PROCEDURE(LONG Date2Split, <*? OutMonth>, <*? OutDay>, <*? OutYear>)
 DB              PROCEDURE(STRING DebugMessage)  !OutputDebugString
@@ -485,7 +485,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                          '      ('& FORMAT(TheTm:Cent,@n2) &' *         1) + |  !Centiseconds i.e. 1/100th  *1=      1  <13,10>' &|
                          '      ('&                   '  ' &'   + 1      )      !Clarion Time always +1. Zero = No Time <13,10>'   )                          
       OF 6            
-            SETCLIPBOARD('!Time  '& FORMAT(TheTime,@t04)                 &' {13}= ' & TheTime &' = 1 + '& TheTime-1  &' <13,10>' & | 
+            SETCLIPBOARD('!Time  '& FORMAT(TheTime,@t04)                 &' {13}= ' & TheTime &' = 1 + '& TheTime-1  &' /100th''s <13,10>' & | 
                          ' Time=('& FORMAT(TheTm:Hrs ,@n2) &' * TIME:Hour  ) + | <13,10>' &|
                          '      ('& FORMAT(TheTm:Mins,@n2) &' * TIME:Minute) + | <13,10>' &|
                          '      ('& FORMAT(TheTm:Secs,@n2) &' * TIME:Second) + | <13,10>' &|
@@ -639,23 +639,25 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
 !-----------------------------------------
 DateCalc_NetDate_Rtn ROUTINE
     DATA
-Clr_RED   LONG(COLOR:Maroon)    
-Clr_WHITE LONG(COLOR:White) 
+Clr_Back LONG(0DDDDFFh)    !Background  Light Red  RGB (255,221,221) 
+Clr_Text LONG(COLOR:Black) !Font Text
     CODE
     DateCalc_NetMonth = DateCalc_BaseMonth + DateCalc_PlusMonth
     DateCalc_NetDay   = DateCalc_BaseDay   + DateCalc_PlusDay  
     DateCalc_NetYear  = DateCalc_BaseYear  + DateCalc_PlusYear 
     DateCalc_NetDate  = DateOrDateFixed(DateCalc_NetMonth,DateCalc_NetDay,DateCalc_NetYear)
-    IF DateCalc_PlusMonth >=0 AND DateCalc_NetMonth >=0 THEN Clr_RED = -1 ; Clr_WHITE = -1.
-    ?DateCalc_PlusMonth{PROP:Color}  = Clr_RED ; ?DateCalc_PlusMonth{PROP:FontColor}  = Clr_WHITE
-    ?MonthNegativeFixBtn{PROP:Color} = Clr_RED ; ?MonthNegativeFixBtn{PROP:FontColor} = Clr_WHITE
+    IF DateCalc_PlusMonth >=0 AND DateCalc_NetMonth >=0     THEN Clr_Back = -1 ; Clr_Text = -1.
+    IF DateCalc_UseDateFixed                                THEN Clr_Back = -1 ; Clr_Text = -1.
+    IF BAND(KEYSTATE(),4000h)=4000h                         THEN Clr_Back = -1 ; Clr_Text = -1.     !Scroll Lock ON does not Warn to allow Screen Captures
+    ?DateCalc_PlusMonth{PROP:Color}  = Clr_Back ; ?DateCalc_PlusMonth{PROP:FontColor}  = Clr_Text
+    ?MonthNegativeFixBtn{PROP:Color} = Clr_Back ; ?MonthNegativeFixBtn{PROP:FontColor} = Clr_Text
     EXIT
 
 DateTwo_NetDate_Rtn ROUTINE 
     DateTwo_NetDate  = DateOrDateFixed(DateTwo_BaseMonth,DateTwo_BaseDay,DateTwo_BaseYear) + DateTwo_PlusDayz
     EXIT
 
-MonthNegativeFixBtnRtn ROUTINE  !Change a Negative Plus Month to Positive ... the make Years Negative
+MonthNegativeFixBtnRtn ROUTINE  !Change "Plus Month" from Negative to Positive ... the make Years Negative
     DATA
 MinusMos LONG 
 FixMos  LONG
@@ -1037,11 +1039,14 @@ Num2DoGrp   GROUP(NumberQ),PRE(Num2Do)
     return
 !------------
 DateOrDateFixed PROCEDURE(long _Month,long _Day,long _Year)!,long   !Calls DATE() or DateFixed() based on DateCalc_UseDateFixed
+StdDate LONG,AUTO
     CODE
-    IF ~DateCalc_UseDateFixed
-       RETURN DATE(_Month,_Day,_Year)
+    IF DateCalc_UseDateFixed THEN 
+       StdDate = DATEfixed(_Month,_Day,_Year)
+    ELSE       
+       StdDate =      DATE(_Month,_Day,_Year)
     END
-    RETURN DATEfixed(DateCalc_BaseMonth,DateCalc_BaseDay,DateCalc_BaseYear) ; DISPLAY
+    RETURN StdDate
     
 !--Local Classes -----------------------
 
@@ -1123,7 +1128,7 @@ YrsAdj      long,auto
     !In C5 there was a bug with 14/29/1999 not seeing it as 2/2000 and as a Leap Year
     !So try to get the date parts into correct range values before using Clarion Date()
     !A bug discovered 11/2007 if Month is zero in 5.0 it calcs wrong, date(0,1,2007) should be 12/31/06 but returns 1/1/07
-    !                           in 5.5 and C6 it returns -1
+    !In 5.5 and C6 DATE(m,d,y) with Month <= 0 Returns -1
     IF ~_Month AND ~_Day AND ~_Year THEN RETURN 0.       !If all zeros then do not adjust
 
     if _Month < 1                           !Date cannot deal with Negative Month 
