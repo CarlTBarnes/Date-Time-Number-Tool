@@ -659,10 +659,11 @@ DateTwo_NetDate_Rtn ROUTINE
 
 MonthNegativeFixBtnRtn ROUTINE  !Change "Plus Month" from Negative to Positive ... the make Years Negative
     DATA
-MinusMos LONG 
-FixMos  LONG
-FixYrs  LONG
+MinusMos  LONG 
+FixMosPos LONG   !Calc of Date(Months,,)      as Postive  i.e. to Add
+FixYrsNeg LONG   !Calc of DATE(      ,,Years) as Negative i.e. to Subtract
 MakNegMos LONG
+MosDiv12  DECIMAL(9,3)   !So Message Year Calc only shows 3 decimals
     CODE
     SELECT(?DateCalc_PlusMonth)
     MinusMos = DateCalc_PlusMonth    !A Shorter Variable
@@ -675,20 +676,23 @@ MakNegMos LONG
        OF 2 ; MinusMos = MakNegMos ; DateCalc_PlusMonth = MakNegMos ; DO DateCalc_NetDate_Rtn ; DISPLAY
        END 
     END
-    FixMos = MinusMos % 12              !e.g. (-1 % 12) = +11 ; (-9 % 12) = +3  remainder of year
-    FixYrs= (MinusMos+1) /-12 +1        !?? does this need an INT() function ? like  INT( (MinusMos+1) /-12) +1
-    
-    CASE Message('The Clarion DATE() function passed a Negative Month will FAIL and Return -1.' & |
+    FixMosPos = MinusMos % 12               !e.g. (-1 % 12) = +11 ; (-9 % 12) = +3  remainder of year
+!was FixYrsV1 = INT((MinusMos+1) /-12) +1   !version 1 of Calc works but result was Positive. Also "+1)/-12" looks odd. Below is shorter
+    FixYrsNeg = INT((MinusMos+1) /12) -1    !This does not need an INT() if assigning to a LONG. an INT() is needed if it were in a Message() or with REAL or DECIMAL
+    MosDiv12  =     (MinusMos+1) /12        !Division with 3 decimals for Message
+
+    CASE Message('The Clarion DATE() function passed a Negative or Zero Month will FAIL and Return -1.' & |
                 '||Instead of Negative Months "'& MinusMos &'"' & |
-                '|Change to Positve Months  "+'& FixMos &'"' & |
-                '|Change to Negative Years   "-'& FixYrs &'"' & |    ! '|Then Add Negative Years "-'& FixYrs &'"' & |
+                '|Change to Positve Months  "+'& FixMosPos &'"' & |
+                '|Change to Negative Years   "'& FixYrsNeg &'"' & |
+                        CHOOSE(DateCalc_PlusYear=0,'',' ... ( + '& DateCalc_PlusYear &' = '& DateCalc_PlusYear + FixYrsNeg &' Years)') & |
                 '||Calculation:' & |
-                '|    M = '& MinusMos & |
-                '|    Months = (M % 12)  =  ('& MinusMos &' % 12 ) = ' &  FixMos & |
-                '|    Years = (M+1)/-12 +1  =  ('& MinusMos &'+1)/-12 +1  =  ('& MinusMos+1 &'/-12 +1) = '& FixYrs & |
+                '|    M = '& MinusMos & '  Months to Subtract' & |
+                '|    Months = (M % 12)  =  ('& MinusMos &' % 12 ) = ' &  FixMosPos & |
+                '|    Years = Int((M+1)/12)-1 = Int(('& MinusMos &'+1)/12)-1 = Int('& MosDiv12 &')-1 = '& Int(MosDiv12) &'-1 = '& FixYrsNeg & |
                 '','DATE() Negative Months',Icon:Clarion, '&Fix Months|&No Fix')
-    OF 1 ; DateCalc_PlusMonth = FixMos
-           DateCalc_PlusYear -= FixYrs 
+    OF 1 ; DateCalc_PlusMonth = FixMosPos
+           DateCalc_PlusYear += FixYrsNeg 
            DO DateCalc_NetDate_Rtn ; DISPLAY
     END 
     EXIT
