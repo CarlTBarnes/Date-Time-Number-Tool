@@ -48,7 +48,7 @@ Time_12:30:00     EQUATE(4500001)     ! 12:30:00  12:30:00PM  123000
 
 ![time tab](images/readme4.png)
 
-At the bottom are Equates for the parts of Time you can copy into your code. 
+At the bottom are Equates for the parts of Time you can copy into your code.
 ___
 ### Number Pictures ... or Any Others @E @P @D @T @S
 
@@ -60,3 +60,5 @@ You can test how DeFromat() works with and without the @Picture for any Value.
 
 The @P @E and @N Number formats syntax is show. These all have tool tips explaining the syntax options.
 ___
+
+This tool was show during ClarionLive Connect! 2024.07.03 at time 40:50 https://www.youtube.com/watch?v=4zDRPFF8WoE?t=40m50s
