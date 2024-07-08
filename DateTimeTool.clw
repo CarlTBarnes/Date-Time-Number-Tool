@@ -106,6 +106,7 @@ DeFmt:Format2   STRING(32)
     MAP
 NumbQAdd        PROCEDURE(string ThePicture, string TheValue, bool bAddFirst=0, <*NumberInpGrp OutNumberInput>)      !Add to the Number Q
 DateOrDateFixed PROCEDURE(long _Month,long _Day,long _Year),long   !Calls DATE() or DateFixed() based on DateCalc_UseDateFixed
+MonthNegativeFixBtnPressed  PROCEDURE()
     END !map 
 
 !Calendar fields
@@ -506,7 +507,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
             DO DateCalc_NetDate_Rtn
         OF ?DateCalc_PlusMonth OROF ?DateCalc_PlusDay OROF ?DateCalc_PlusYear
             DO DateCalc_NetDate_Rtn
-        OF ?MonthNegativeFixBtn       ;  DO MonthNegativeFixBtnRtn
+        OF ?MonthNegativeFixBtn       ;  MonthNegativeFixBtnPressed()
 
         OF ?DateTwo_BaseMonth OROF ?DateTwo_BaseDay OROF ?DateTwo_BaseYear
             DateTwo_BaseDate = DateOrDateFixed(DateTwo_BaseMonth,DateTwo_BaseDay,DateTwo_BaseYear)
@@ -657,45 +658,6 @@ DateTwo_NetDate_Rtn ROUTINE
     DateTwo_NetDate  = DateOrDateFixed(DateTwo_BaseMonth,DateTwo_BaseDay,DateTwo_BaseYear) + DateTwo_PlusDayz
     EXIT
 
-MonthNegativeFixBtnRtn ROUTINE  !Change "Plus Month" from Negative to Positive ... the make Years Negative
-    DATA
-MinusMos  LONG 
-FixMosPos LONG   !Calc of Date(Months,,)      as Postive  i.e. to Add
-FixYrsNeg LONG   !Calc of DATE(      ,,Years) as Negative i.e. to Subtract
-MakNegMos LONG
-MosDiv12  DECIMAL(9,3)   !So Message Year Calc only shows 3 decimals
-    CODE
-    SELECT(?DateCalc_PlusMonth)
-    MinusMos = DateCalc_PlusMonth    !A Shorter Variable
-    IF MinusMos >= 0 THEN 
-       MakNegMos = (DateCalc_BaseMonth * -1) - 1
-       CASE Message('The Change Month "' & MinusMos &'" is not negative so there is nonthing to Fix.' & |
-                    '||Click "Make Negative" and I''ll change Month to "' & MakNegMos &'" to create a problem.' , | 
-                    'Negative Month',,'Close|Make Negative')
-       OF 1 ; EXIT
-       OF 2 ; MinusMos = MakNegMos ; DateCalc_PlusMonth = MakNegMos ; DO DateCalc_NetDate_Rtn ; DISPLAY
-       END 
-    END
-    FixMosPos = MinusMos % 12               !e.g. (-1 % 12) = +11 ; (-9 % 12) = +3  remainder of year
-!was FixYrsV1 = INT((MinusMos+1) /-12) +1   !version 1 of Calc works but result was Positive. Also "+1)/-12" looks odd. Below is shorter
-    FixYrsNeg = INT((MinusMos+1) /12) -1    !This does not need an INT() if assigning to a LONG. an INT() is needed if it were in a Message() or with REAL or DECIMAL
-    MosDiv12  =     (MinusMos+1) /12        !Division with 3 decimals for Message
-
-    CASE Message('The Clarion DATE() function passed a Negative or Zero Month will FAIL and Return -1.' & |
-                '||Instead of Negative Months "'& MinusMos &'"' & |
-                '|Change to Positve Months  "+'& FixMosPos &'"' & |
-                '|Change to Negative Years   "'& FixYrsNeg &'"' & |
-                        CHOOSE(DateCalc_PlusYear=0,'',' ... ( + '& DateCalc_PlusYear &' = '& DateCalc_PlusYear + FixYrsNeg &' Years)') & |
-                '||Calculation:' & |
-                '|    M = '& MinusMos & '  Months to Subtract' & |
-                '|    Months = (M % 12)  =  ('& MinusMos &' % 12 ) = ' &  FixMosPos & |
-                '|    Years = Int((M+1)/12)-1 = Int(('& MinusMos &'+1)/12)-1 = Int('& MosDiv12 &')-1 = '& Int(MosDiv12) &'-1 = '& FixYrsNeg & |
-                '','DATE() Negative Months',Icon:Clarion, '&Fix Months|&No Fix')
-    OF 1 ; DateCalc_PlusMonth = FixMosPos
-           DateCalc_PlusYear += FixYrsNeg 
-           DO DateCalc_NetDate_Rtn ; DISPLAY
-    END 
-    EXIT
 !-----------------------------------------
 BuildNumberQRtn        ROUTINE
     !@N [currency] [sign] [fill] size [grouping][places][sign] [currency] [B]
@@ -924,7 +886,7 @@ ToolTipsRtn ROUTINE
            '<13,10>' & |
            '<13,10>C5.5 and C6 fixed the Leap Year problems.' & |
            '<13,10>If Month is Zero or Negative it incorrectly returns -1.' & |
-           '<13,10>If Day is Zero that works correctly.' & |
+           '<13,10>If Day or Negative is Zero that works correctly.' & |
            '<13,10>' & |
            '<13,10>Test out of range values to see if there is still a use for DateFixed() ?' & |
            '<13,10>'
@@ -1051,7 +1013,46 @@ StdDate LONG,AUTO
        StdDate =      DATE(_Month,_Day,_Year)
     END
     RETURN StdDate
-    
+!---------------
+MonthNegativeFixBtnPressed  PROCEDURE()
+MinusMos  LONG 
+FixMosPos LONG   !Calc of Date(Months,,)      as Postive  i.e. to Add
+FixYrsNeg LONG   !Calc of DATE(      ,,Years) as Negative i.e. to Subtract
+MakNegMos LONG
+MosDiv12  DECIMAL(9,3)   !So Message Year Calc only shows 3 decimals
+    CODE
+    SELECT(?DateCalc_PlusMonth)
+    MinusMos = DateCalc_PlusMonth    !A Shorter Variable
+    IF MinusMos >= 0 THEN 
+       MakNegMos = (DateCalc_BaseMonth * -1) - 1
+       CASE Message('The Change Month "' & MinusMos &'" is not negative so there is nonthing to Fix.' & |
+                    '||Click "Make Negative" and I''ll change Month to "' & MakNegMos &'" to create a problem.' , | 
+                    'Negative Month',,'Close|Make Negative')
+       OF 1 ; RETURN
+       OF 2 ; MinusMos = MakNegMos ; DateCalc_PlusMonth = MakNegMos ; DO DateCalc_NetDate_Rtn ; DISPLAY
+       END 
+    END
+    FixMosPos = MinusMos % 12               !e.g. (-1 % 12) = +11 ; (-9 % 12) = +3  remainder of year
+!was FixYrsV1 = INT((MinusMos+1) /-12) +1   !version 1 of Calc works but result was Positive. Also "+1)/-12" looks odd. Below is shorter
+    FixYrsNeg = INT((MinusMos+1) /12) -1    !This does not need an INT() if assigning to a LONG. an INT() is needed if it were in a Message() or with REAL or DECIMAL
+    MosDiv12  =     (MinusMos+1) /12        !Division with 3 decimals for Message
+
+    CASE Message('The Clarion DATE() function passed a Negative or Zero Month will FAIL and Return -1.' & |
+                '||Instead of Negative Months "'& MinusMos &'"' & |
+                '|Change to Positve Months  "+'& FixMosPos &'"' & |
+                '|Change to Negative Years   "'& FixYrsNeg &'"' & |
+                        CHOOSE(DateCalc_PlusYear=0,'',' ... ( + '& DateCalc_PlusYear &' = '& DateCalc_PlusYear + FixYrsNeg &' Years)') & |
+                '||Calculation:' & |
+                '|    M = '& MinusMos & '  Months to Subtract' & |
+                '|    Months = (M % 12)  =  ('& MinusMos &' % 12 ) = ' &  FixMosPos & |
+                '|    Years = Int((M+1)/12)-1 = Int(('& MinusMos &'+1)/12)-1 = Int('& MosDiv12 &')-1 = '& Int(MosDiv12) &'-1 = '& FixYrsNeg & |
+                '','DATE() Negative Months',Icon:Clarion, '&Fix Months|&No Fix')
+    OF 1 ; DateCalc_PlusMonth = FixMosPos
+           DateCalc_PlusYear += FixYrsNeg 
+           DO DateCalc_NetDate_Rtn ; DISPLAY
+    END 
+    RETURN
+
 !--Local Classes -----------------------
 
 Picker.PickLead PROCEDURE(long BtnFEQ, string TypeDTN, *string LeadChar)!,bool        !returns was picked
@@ -1127,12 +1128,19 @@ PkNum    LONG,AUTO
 DateFixed            FUNCTION (long _Month,long _Day,long _Year)!,long
 RetDate     long,auto
 YrsAdj      long,auto
-  CODE                                            ! Begin processed code
+  CODE
+    ! From ClarionMag on 2006-01-09 "A Better DATE Function" by Carl Barnes. Included in Repo.
+    ! http://www.clarionmag.com/cmag/v8/v8n01betterdate.html    
+    ! Carl Barnes improves on the standard Clarion DATE function with a version that corrects a bug and works with negative month and day values.
+    !-----------------------------------------------------------------------------------------------
     !Passing Date Function a Negative or Zero, Month or Day Does not work, it returns a bad value
-    !In C5 there was a bug with 14/29/1999 not seeing it as 2/2000 and as a Leap Year
+    !C5 had a bug with 14/29/1999 not seeing it as 2/2000 and as a Leap Year so returned 3/1/2000 instead of 2/29/2000. 
+    !It also failed on negative days like DATE(1,-15,2000) returning -1 instead of 12/16/1999.
     !So try to get the date parts into correct range values before using Clarion Date()
     !A bug discovered 11/2007 if Month is zero in 5.0 it calcs wrong, date(0,1,2007) should be 12/31/06 but returns 1/1/07
     !In 5.5 and C6 DATE(m,d,y) with Month <= 0 Returns -1
+    !-----------------------------------------------------------------------------------------------
+
     IF ~_Month AND ~_Day AND ~_Year THEN RETURN 0.       !If all zeros then do not adjust
 
     if _Month < 1                           !Date cannot deal with Negative Month 
