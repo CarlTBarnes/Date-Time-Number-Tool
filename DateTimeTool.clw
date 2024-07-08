@@ -102,12 +102,13 @@ DeFmt:RawValue  STRING(32)
 DeFmt:Format1   STRING(32)
 DeFmt:Picture   STRING(32)
 DeFmt:Format2   STRING(32)
-        
-    MAP
+                    
+                    !See my Tool Do2Class to convert routines to a DOO Class:  https://github.com/CarlTBarnes/Do2Class
+DOO         CLASS   !A Class for Routines so can be called a Procedures and return values. I prefer to MAP so Scope is more obvious.
 NumbQAdd        PROCEDURE(string ThePicture, string TheValue, bool bAddFirst=0, <*NumberInpGrp OutNumberInput>)      !Add to the Number Q
 DateOrDateFixed PROCEDURE(long _Month,long _Day,long _Year),long   !Calls DATE() or DateFixed() based on DateCalc_UseDateFixed
 MonthNegativeFixBtnPressed  PROCEDURE()
-    END !map 
+            END
 
 !Calendar fields
 Weeks       string(21),dim(6)
@@ -500,17 +501,17 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
             POST(EVENT:Accepted, ?DateCalc_BaseMonth)            
             POST(EVENT:Accepted, ?DateTwo_BaseMonth)            
         OF ?DateCalc_BaseMonth OROF ?DateCalc_BaseDay OROF ?DateCalc_BaseYear        
-            DateCalc_BaseDate = DateOrDateFixed(DateCalc_BaseMonth,DateCalc_BaseDay,DateCalc_BaseYear)
+            DateCalc_BaseDate = DOO.DateOrDateFixed(DateCalc_BaseMonth,DateCalc_BaseDay,DateCalc_BaseYear)
             DO DateCalc_NetDate_Rtn
         OF ?DateCalc_BaseDate OROF ?DateCalc_BaseDate:D2
             DateSplit(DateCalc_BaseDate, DateCalc_BaseMonth, DateCalc_BaseDay, DateCalc_BaseYear)
             DO DateCalc_NetDate_Rtn
         OF ?DateCalc_PlusMonth OROF ?DateCalc_PlusDay OROF ?DateCalc_PlusYear
             DO DateCalc_NetDate_Rtn
-        OF ?MonthNegativeFixBtn       ;  MonthNegativeFixBtnPressed()
+        OF ?MonthNegativeFixBtn       ;  DOO.MonthNegativeFixBtnPressed()
 
         OF ?DateTwo_BaseMonth OROF ?DateTwo_BaseDay OROF ?DateTwo_BaseYear
-            DateTwo_BaseDate = DateOrDateFixed(DateTwo_BaseMonth,DateTwo_BaseDay,DateTwo_BaseYear)
+            DateTwo_BaseDate = DOO.DateOrDateFixed(DateTwo_BaseMonth,DateTwo_BaseDay,DateTwo_BaseYear)
             DO DateTwo_NetDate_Rtn
         OF ?DateTwo_BaseDate OROF ?DateTwo_BaseDate:D2
             DateSplit(DateTwo_BaseDate, DateTwo_BaseMonth, DateTwo_BaseDay, DateTwo_BaseYear)
@@ -534,7 +535,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
         OF ?NumInput:Pic
                 IF LEN(CLIP(NumInput:Pic)) >2 AND NumInput:Pic[1]<>'@' THEN NumInput:Pic='@' & NumInput:Pic.
                 IF ~NumInput:Pic THEN NumInput:Pic=NumQ:Pic.    !'@n-15.2'.
-                NumbQAdd(NumInput:Pic,NumInput:RawValue,,NumberInpGrp) ; display
+                DOO.NumbQAdd(NumInput:Pic,NumInput:RawValue,,NumberInpGrp) ; display
                 IF ~INLIST(lower(NumInput:Pic[1:2]),'@n','@e','@p','@d','@t','@s','@k') THEN 
                     Message('Expected Clarion Pictures |are @N @E @P @D @T @S','Numbers')
                     SELECT(?NumInput:Pic)
@@ -545,7 +546,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                     Message('The Value must be Numeric','Numbers')
                     NumInput:RawValue=DEFORMAT(NumInput:RawValue)
                 END                
-                NumbQAdd(NumInput:Pic,NumInput:RawValue,,NumberInpGrp) ; display
+                DOO.NumbQAdd(NumInput:Pic,NumInput:RawValue,,NumberInpGrp) ; display
         OF ?AddNumPicBtn
             NumberQ = NumberInpGrp
             GET(NumberQ,NumQ:Pic,NumQ:RawValue)
@@ -646,7 +647,7 @@ Clr_Text LONG(COLOR:Black) !Font Text
     DateCalc_NetMonth = DateCalc_BaseMonth + DateCalc_PlusMonth
     DateCalc_NetDay   = DateCalc_BaseDay   + DateCalc_PlusDay  
     DateCalc_NetYear  = DateCalc_BaseYear  + DateCalc_PlusYear 
-    DateCalc_NetDate  = DateOrDateFixed(DateCalc_NetMonth,DateCalc_NetDay,DateCalc_NetYear)
+    DateCalc_NetDate  = DOO.DateOrDateFixed(DateCalc_NetMonth,DateCalc_NetDay,DateCalc_NetYear)
     IF DateCalc_PlusMonth >=0 AND DateCalc_NetMonth >=0     THEN Clr_Back = -1 ; Clr_Text = -1.
     IF DateCalc_UseDateFixed                                THEN Clr_Back = -1 ; Clr_Text = -1.
     IF BAND(KEYSTATE(),4000h)=4000h                         THEN Clr_Back = -1 ; Clr_Text = -1.     !Scroll Lock ON does not Warn to allow Screen Captures
@@ -655,7 +656,7 @@ Clr_Text LONG(COLOR:Black) !Font Text
     EXIT
 
 DateTwo_NetDate_Rtn ROUTINE 
-    DateTwo_NetDate  = DateOrDateFixed(DateTwo_BaseMonth,DateTwo_BaseDay,DateTwo_BaseYear) + DateTwo_PlusDayz
+    DateTwo_NetDate  = DOO.DateOrDateFixed(DateTwo_BaseMonth,DateTwo_BaseDay,DateTwo_BaseYear) + DateTwo_PlusDayz
     EXIT
 
 !-----------------------------------------
@@ -663,48 +664,48 @@ BuildNumberQRtn        ROUTINE
     !@N [currency] [sign] [fill] size [grouping][places][sign] [currency] [B]
     !   $ or ~XX~   - (    0*_   ##    . - _     .`v ##  - )    $ or ~XX~
     !                        _ for spaces
-    NumbQAdd('@n$-_15.2',-1234567.89)   ; NumberInpGrp = NumberQ            !Default for Number Input ENTRYs
-    NumbQAdd('@n15.2'   ,-1234567.89)
-    NumbQAdd('@n$15.2'  ,-1234567.89)
-    NumbQAdd('@n-15.2'  ,-1234567.89)
-    NumbQAdd('@n_15.2'  ,-1234567.89)
-    NumbQAdd('@n-_15.2' ,-1234567.89)
-    NumbQAdd('@n-015.2' ,-1234567.89)
-    NumbQAdd('@n*15.2-' ,-1234567.89)
-    NumbQAdd('@n$-15.2' ,-1234567.89)
-    NumbQAdd('@n$(15.2)',-1234567.89)
-    NumbQAdd('@n$-_15.2',-1234567.89)
-    NumbQAdd('@n$(_15.2)',-1234567.89)   !
-    NumbQAdd('@n15`2~kr~'  ,-1234567.89)
-    NumbQAdd('@n~kr~-15`2' ,-1234567.89)
-  !  NumbQAdd('@n-15-2',1234567.89)  no dash grouping does not work
-    NumbQAdd('@n-8.2~%~',-100.89)
-    NumbQAdd('@n7.5b'   ,0.12345)
-    NumbQAdd('@n~X~1b',1)
-    NumbQAdd('@n~Yes~3b',1)
+    DOO.NumbQAdd('@n$-_15.2',-1234567.89)   ; NumberInpGrp = NumberQ            !Default for Number Input ENTRYs
+    DOO.NumbQAdd('@n15.2'   ,-1234567.89)
+    DOO.NumbQAdd('@n$15.2'  ,-1234567.89)
+    DOO.NumbQAdd('@n-15.2'  ,-1234567.89)
+    DOO.NumbQAdd('@n_15.2'  ,-1234567.89)
+    DOO.NumbQAdd('@n-_15.2' ,-1234567.89)
+    DOO.NumbQAdd('@n-015.2' ,-1234567.89)
+    DOO.NumbQAdd('@n*15.2-' ,-1234567.89)
+    DOO.NumbQAdd('@n$-15.2' ,-1234567.89)
+    DOO.NumbQAdd('@n$(15.2)',-1234567.89)
+    DOO.NumbQAdd('@n$-_15.2',-1234567.89)
+    DOO.NumbQAdd('@n$(_15.2)',-1234567.89)   !
+    DOO.NumbQAdd('@n15`2~kr~'  ,-1234567.89)
+    DOO.NumbQAdd('@n~kr~-15`2' ,-1234567.89)
+  !  DOO.NumbQAdd('@n-15-2',1234567.89)  no dash grouping does not work
+    DOO.NumbQAdd('@n-8.2~%~',-100.89)
+    DOO.NumbQAdd('@n7.5b'   ,0.12345)
+    DOO.NumbQAdd('@n~X~1b',1)
+    DOO.NumbQAdd('@n~Yes~3b',1)
 
-    NumbQAdd('@e15.1',-1234567.89)
-    NumbQAdd('@e15.2',-1234567.89)
+    DOO.NumbQAdd('@e15.1',-1234567.89)
+    DOO.NumbQAdd('@e15.2',-1234567.89)
 
-    NumbQAdd('@p###-##-####p','078051120')     !SSN not valid issued by Woolworth with wallet
-    NumbQAdd('@p***-**-####p',     1120)     !SSN Masked
-    NumbQAdd('@p##-#######p' ,801234567)     !FEIN
-    NumbQAdd('@p#####-####p' ,'021124321')     !Zip+4 Boston
-    !NumbQAdd('@P<#/##/#### Magna CartaP' ,'06151215')     !Date with no Limit of 1800
-    NumbQAdd('@P<#/##/#### IndependenceP' ,'07041776')     !Date with no Limit of 1800 or Date in MMDDYYYY form
-    NumbQAdd('@PFY ####-####' ,YEAR(TheDate)*10000+YEAR(TheDate)+1)     !Fiscal Year e.g. 2024-2025
-    NumbQAdd('@pPage <<<<#p' ,42)                        !              !Example of "P" as [x]
-    NumbQAdd('@P(###)###-####P',3057854555)  !From the Help
-    NumbQAdd('@P###/###-####P' ,7854555    ) !000/785-4555
-    NumbQAdd('@P<#/##/##P   '  ,103159     ) !10/31/59
-    NumbQAdd('@p<#:##PMp    '  ,530        ) !5:30PM
-    NumbQAdd('@P<#'' <#"P   '  ,506        ) !5'  6"
-    NumbQAdd('@P<#lb. <#oz.P'  ,902        ) !9lb. 2oz.
-    NumbQAdd('@P4##A-#P     '  ,112        ) !411A-2
-    NumbQAdd('@PA##.C#P     '  ,312.45     ) !A31.C2
+    DOO.NumbQAdd('@p###-##-####p','078051120')     !SSN not valid issued by Woolworth with wallet
+    DOO.NumbQAdd('@p***-**-####p',     1120)     !SSN Masked
+    DOO.NumbQAdd('@p##-#######p' ,801234567)     !FEIN
+    DOO.NumbQAdd('@p#####-####p' ,'021124321')     !Zip+4 Boston
+    !DOO.NumbQAdd('@P<#/##/#### Magna CartaP' ,'06151215')     !Date with no Limit of 1800
+    DOO.NumbQAdd('@P<#/##/#### IndependenceP' ,'07041776')     !Date with no Limit of 1800 or Date in MMDDYYYY form
+    DOO.NumbQAdd('@PFY ####-####' ,YEAR(TheDate)*10000+YEAR(TheDate)+1)     !Fiscal Year e.g. 2024-2025
+    DOO.NumbQAdd('@pPage <<<<#p' ,42)                        !              !Example of "P" as [x]
+    DOO.NumbQAdd('@P(###)###-####P',3057854555)  !From the Help
+    DOO.NumbQAdd('@P###/###-####P' ,7854555    ) !000/785-4555
+    DOO.NumbQAdd('@P<#/##/##P   '  ,103159     ) !10/31/59
+    DOO.NumbQAdd('@p<#:##PMp    '  ,530        ) !5:30PM
+    DOO.NumbQAdd('@P<#'' <#"P   '  ,506        ) !5'  6"
+    DOO.NumbQAdd('@P<#lb. <#oz.P'  ,902        ) !9lb. 2oz.
+    DOO.NumbQAdd('@P4##A-#P     '  ,112        ) !411A-2
+    DOO.NumbQAdd('@PA##.C#P     '  ,312.45     ) !A31.C2
 
-    NumbQAdd('@d02-',452598)            !dates work = 02/29/3040 
-    NumbQAdd('@t8'  ,6120001)           !times work = 5 o'clock somewhere
+    DOO.NumbQAdd('@d02-',452598)            !dates work = 02/29/3040 
+    DOO.NumbQAdd('@t8'  ,6120001)           !times work = 5 o'clock somewhere
     EXIT
 
 BuildCalendarAndDatesQRtn    ROUTINE
@@ -988,8 +989,8 @@ ToolTipsRtn ROUTINE
     EXIT
 
 
-! ####### Main Procedure MAP and CLASS #################################################################
-NumbQAdd PROCEDURE(string ThePicture, string TheValue, bool bAddFirst=0, <*NumberInpGrp OutNumberInput>)
+! ####### Main Procedure Local Procedures in CLASS #################################################################
+DOO.NumbQAdd PROCEDURE(string ThePicture, string TheValue, bool bAddFirst=0, <*NumberInpGrp OutNumberInput>)
 Num2DoGrp   GROUP(NumberQ),PRE(Num2Do)
             END 
     CODE
@@ -1004,7 +1005,7 @@ Num2DoGrp   GROUP(NumberQ),PRE(Num2Do)
     END 
     return
 !------------
-DateOrDateFixed PROCEDURE(long _Month,long _Day,long _Year)!,long   !Calls DATE() or DateFixed() based on DateCalc_UseDateFixed
+DOO.DateOrDateFixed PROCEDURE(long _Month,long _Day,long _Year)!,long   !Calls DATE() or DateFixed() based on DateCalc_UseDateFixed
 StdDate LONG,AUTO
     CODE
     IF DateCalc_UseDateFixed THEN 
@@ -1014,7 +1015,7 @@ StdDate LONG,AUTO
     END
     RETURN StdDate
 !---------------
-MonthNegativeFixBtnPressed  PROCEDURE()
+DOO.MonthNegativeFixBtnPressed  PROCEDURE()
 MinusMos  LONG 
 FixMosPos LONG   !Calc of Date(Months,,)      as Postive  i.e. to Add
 FixYrsNeg LONG   !Calc of DATE(      ,,Years) as Negative i.e. to Subtract
@@ -1123,7 +1124,7 @@ PkNum    LONG,AUTO
     TheChar=PickQ:Char
     RETURN(PkNum)
 
-! ####### MAP PROCEDURES #######################################################################
+! ####### MAP Global Procedures #######################################################################
 !----------------------------------
 DateFixed            FUNCTION (long _Month,long _Day,long _Year)!,long
 RetDate     long,auto
