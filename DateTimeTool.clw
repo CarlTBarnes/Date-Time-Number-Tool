@@ -32,7 +32,9 @@ TimeHMS         PROCEDURE(LONG Hours=0, LONG Mins=0, LONG Secs=0, LONG Hundredth
     END !MAP
 
     CODE
-    Main
+    SYSTEM{PROP:MsgModeDefault}=MSGMODE:CANCOPY  ;  SYSTEM{7A58h}=1 !is PROP:PropVScroll added C11 
+    SYSTEM{PROP:FontName}='Segoe UI' ; SYSTEM{PROP:FontSize}=11    
+    Main()
     return
 
 Main    Procedure()   
@@ -108,6 +110,7 @@ DOO         CLASS   !A Class for Routines so can be called a Procedures and retu
 NumbQAdd        PROCEDURE(string ThePicture, string TheValue, bool bAddFirst=0, <*NumberInpGrp OutNumberInput>)      !Add to the Number Q
 DateOrDateFixed PROCEDURE(long _Month,long _Day,long _Year),long   !Calls DATE() or DateFixed() based on DateCalc_UseDateFixed
 MonthNegativeFixBtnPressed  PROCEDURE()
+MonthNegFyiDate PROCEDURE(STRING DateFctName, LONG FyiMonth, LONG FyiDay, LONG FyiYear, STRING FyiSuffixNote),STRING   !Fmt Date() for Msg FYI lines
             END
 
 !Calendar fields
@@ -371,8 +374,6 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
     END
 
     CODE
-    SYSTEM{PROP:MsgModeDefault}=MSGMODE:CANCOPY  ;  SYSTEM{7A58h}=1 !is PROP:PropVScroll added C11 
-    SYSTEM{PROP:FontName}='Segoe UI' ; SYSTEM{PROP:FontSize}=12 
     TheDate = TODAY() ; TheTime = INT((CLOCK()-1)/100) * 100 + 1    !No 1/100's
     DO BuildNumberQRtn    
     DO LoadTimeQRtn
@@ -1021,6 +1022,9 @@ FixMosPos LONG   !Calc of Date(Months,,)      as Postive  i.e. to Add
 FixYrsNeg LONG   !Calc of DATE(      ,,Years) as Negative i.e. to Subtract
 MakNegMos LONG
 MosDiv12  DECIMAL(9,3)   !So Message Year Calc only shows 3 decimals
+FYI_Month LONG
+FYI_Day   LONG
+FYI_Year  LONG
     CODE
     SELECT(?DateCalc_PlusMonth)
     MinusMos = DateCalc_PlusMonth    !A Shorter Variable
@@ -1037,24 +1041,44 @@ MosDiv12  DECIMAL(9,3)   !So Message Year Calc only shows 3 decimals
 !was FixYrsV1 = INT((MinusMos+1) /-12) +1   !version 1 of Calc works but result was Positive. Also "+1)/-12" looks odd. Below is shorter
     FixYrsNeg = INT((MinusMos+1) /12) -1    !This does not need an INT() if assigning to a LONG. an INT() is needed if it were in a Message() or with REAL or DECIMAL
     MosDiv12  =     (MinusMos+1) /12        !Division with 3 decimals for Message
+    FYI_Month = DateCalc_BaseMonth + FixMosPos
+    FYI_Day   = DateCalc_BaseDay   + DateCalc_PlusDay  
+    FYI_Year  = DateCalc_BaseYear  + DateCalc_PlusYear + FixYrsNeg
 
-    CASE Message('The Clarion DATE() function passed a Negative or Zero Month will FAIL and Return -1.' & |
+    CASE Message('The C8 - C11 DATE() function passed a Negative or Zero Month will FAIL and Return -1.' & |
                 '||Instead of Negative Months "'& MinusMos &'"' & |
-                '|Change to Positve Months  "+'& FixMosPos &'"' & |
-                '|Change to Negative Years   "'& FixYrsNeg &'"' & |
+                '|   Change to Positve Months  "+'& FixMosPos &'"' & |
+                '|   Change to Negative Years   "'& FixYrsNeg &'"' & |
                         CHOOSE(DateCalc_PlusYear=0,'',' ... ( + '& DateCalc_PlusYear &' = '& DateCalc_PlusYear + FixYrsNeg &' Years)') & |
                 '||Calculation:' & |
                 '|    M = '& MinusMos & '  Months to Subtract' & |
-                '|    Months = (M % 12)  =  ('& MinusMos &' % 12 ) = ' &  FixMosPos & |
-                '|    Years = Int((M+1)/12)-1 = Int(('& MinusMos &'+1)/12)-1 = Int('& MosDiv12 &')-1 = '& Int(MosDiv12) &'-1 = '& FixYrsNeg & |
-                '','DATE() Negative Months',Icon:Clarion, '&Fix Months|&No Fix')
+                '|    Months+ = (M % 12)  =  ('& MinusMos &' % 12 ) = ' &  FixMosPos & |
+                '|    Years- = Int((M+1)/12)-1 = Int(('& MinusMos &'+1)/12)-1 = Int('& MosDiv12 &')-1 = '& Int(MosDiv12) &'-1 = '& FixYrsNeg & |
+                '||FYI - Return Date of Various (Month,Day,Year) Values and Functions: ' & |
+                '|'& DOO.MonthNegFyiDate('RTL  DATE' , DateCalc_NetMonth, DateCalc_NetDay, DateCalc_NetYear, '-Months') & |
+                '|'& DOO.MonthNegFyiDate('RTL  DATE' , FYI_Month,         FYI_Day,         FYI_Year,         '+Mos -Yrs') & | 
+                '|'& DOO.MonthNegFyiDate('DateFixed', DateCalc_NetMonth, DateCalc_NetDay, DateCalc_NetYear, '-Months') & |
+                '|'& DOO.MonthNegFyiDate('DateFixed', FYI_Month,         FYI_Day,         FYI_Year,         '+Mos -Yrs') & |
+                '','DATE() with Month Adjust Negative',Icon:Clarion, '&Fix -Months|&No Fix')
     OF 1 ; DateCalc_PlusMonth = FixMosPos
            DateCalc_PlusYear += FixYrsNeg 
            DO DateCalc_NetDate_Rtn ; DISPLAY
     END 
-    RETURN
+    RETURN   
+   
+DOO.MonthNegFyiDate PROCEDURE(STRING DateFctName, LONG FyiMonth, LONG FyiDay, LONG FyiYear, STRING FyiSuffixNote)!,STRING
+FctValue LONG,AUTO
+FmtValue PSTRING(16),AUTO
+    CODE
+    CASE UPPER(DateFctName)  !Yes Mark should be EQUATEs ... but only 3 and called just 10 lines above
+    OF 'RTL  DATE'  ; FctValue = Date(FyiMonth,FyiDay,FyiYear)
+    OF 'DATEFIXED'  ; FctValue = DateFixed(FyiMonth,FyiDay,FyiYear)
+    ELSE            ; RETURN '???? Unknown DateFctName="'& DateFctName &'" in DOO.MonNegFyiDate() ????'
+    END
+    FmtValue = CHOOSE(FctValue=-1,'##/##/####',FORMAT(FctValue,@d02))   
+    RETURN ' {8}'& DateFctName &'( '& FyiMonth &' , '& FyiDay &' , '& FyiYear &' ) => '& FctValue &' => '& FmtValue &'  ('& FyiSuffixNote &')'
 
-!--Local Classes -----------------------
+!--Local Picker Class -----------------------
 
 Picker.PickLead PROCEDURE(long BtnFEQ, string TypeDTN, *string LeadChar)!,bool        !returns was picked
     code
