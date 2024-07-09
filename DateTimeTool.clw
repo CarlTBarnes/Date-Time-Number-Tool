@@ -1,6 +1,7 @@
-!TODO
-!   Time Calc Tab, could fit on Time Tab at bottom 
-!
+!A Tool that helps work with Clarion Dates, Times, Numbers and Pictures by Carl Barnes.
+!See Clarion Standard Dates and All @D Pictures, the same for Standard Time and @T Pictures.
+!Test Date Calculations with DATE() function to see if they workas expected. 
+
     PROGRAM
     INCLUDE 'keycodes.clw'
 
@@ -13,7 +14,8 @@ WndPrvCls   CBWndPreviewClass,THREAD
     MAP
 Main        Procedure()
 DateFixed       PROCEDURE(long _Month,long _Day,long _Year),long        !Fixed to handle C5 - C6 problems with Month/Day out of Range
-DateAdjust      PROCEDURE(LONG InDate, LONG YearAdj=0, LONG MonthAdj=0, LONG DayAdj=0, <SHORT ForceDay>),LONG 
+DateFixV2       PROCEDURE(LONG _Month,LONG _Day,LONG _Year),LONG        !Version 2 for C8 - C11 that fails if Month Zero or Negative 
+DateAdjust      PROCEDURE(LONG InDate, LONG YearAdj=0, LONG MonthAdj=0, LONG DayAdj=0, <SHORT ForceDay>),LONG  !Uses  DateFixed() to handle problem values
 DateSplit       PROCEDURE(LONG Date2Split, <*? OutMonth>, <*? OutDay>, <*? OutYear>)
 DB              PROCEDURE(STRING DebugMessage)  !OutputDebugString
 DOWName         PROCEDURE(LONG Date2Dow),STRING
@@ -1059,6 +1061,8 @@ FYI_Year  LONG
                 '|'& DOO.MonthNegFyiDate('RTL  DATE' , FYI_Month,         FYI_Day,         FYI_Year,         '+Mos -Yrs') & | 
                 '|'& DOO.MonthNegFyiDate('DateFixed', DateCalc_NetMonth, DateCalc_NetDay, DateCalc_NetYear, '-Months') & |
                 '|'& DOO.MonthNegFyiDate('DateFixed', FYI_Month,         FYI_Day,         FYI_Year,         '+Mos -Yrs') & |
+                '|'& DOO.MonthNegFyiDate('DateFixV2', DateCalc_NetMonth, DateCalc_NetDay, DateCalc_NetYear, '-Months') & |
+                '|'& DOO.MonthNegFyiDate('DateFixV2', FYI_Month,         FYI_Day,         FYI_Year,         '+Mos -Yrs') & |
                 '','DATE() with Month Adjust Negative',Icon:Clarion, '&Fix -Months|&No Fix')
     OF 1 ; DateCalc_PlusMonth = FixMosPos
            DateCalc_PlusYear += FixYrsNeg 
@@ -1068,15 +1072,18 @@ FYI_Year  LONG
    
 DOO.MonthNegFyiDate PROCEDURE(STRING DateFctName, LONG FyiMonth, LONG FyiDay, LONG FyiYear, STRING FyiSuffixNote)!,STRING
 FctValue LONG,AUTO
+ValueStr PSTRING(12),AUTO
 FmtValue PSTRING(16),AUTO
     CODE
     CASE UPPER(DateFctName)  !Yes Mark should be EQUATEs ... but only 3 and called just 10 lines above
-    OF 'RTL  DATE'  ; FctValue = Date(FyiMonth,FyiDay,FyiYear)
+    OF 'RTL  DATE'  ; FctValue =      Date(FyiMonth,FyiDay,FyiYear)
     OF 'DATEFIXED'  ; FctValue = DateFixed(FyiMonth,FyiDay,FyiYear)
+    OF 'DATEFIXV2'  ; FctValue = DateFixV2(FyiMonth,FyiDay,FyiYear)
     ELSE            ; RETURN '???? Unknown DateFctName="'& DateFctName &'" in DOO.MonNegFyiDate() ????'
     END
-    FmtValue = CHOOSE(FctValue=-1,'##/##/####',FORMAT(FctValue,@d02))   
-    RETURN ' {8}'& DateFctName &'( '& FyiMonth &' , '& FyiDay &' , '& FyiYear &' ) => '& FctValue &' => '& FmtValue &'  ('& FyiSuffixNote &')'
+    FmtValue = CHOOSE(FctValue=-1,'##/##/####',FORMAT(FctValue,@d02))
+    ValueStr = CHOOSE(FctValue=-1,'???  -1','' & FctValue)
+    RETURN ' {8}'& DateFctName &'( '& FyiMonth &' , '& FyiDay &' , '& FyiYear &' ) => '& ValueStr &' => '& FmtValue &'  ('& FyiSuffixNote &')'
 
 !--Local Picker Class -----------------------
 
@@ -1150,7 +1157,29 @@ PkNum    LONG,AUTO
 
 ! ####### MAP Global Procedures #######################################################################
 !----------------------------------
-DateFixed            FUNCTION (long _Month,long _Day,long _Year)!,long
+DateFixV2  PROCEDURE(LONG _Month,LONG _Day,LONG _Year)!,LONG        !Version 2 for C8 - C11 that fails if Month Zero or Negative 
+! AFAIK in C8 - C11 the Leap Year problems corrected by V1 of DateFixed() below are fixed. 
+! The problem is MONTH cannot be Zero or Negative.
+! This Version 2 DateFixV2() was created as much simpler that V1 DateFixed to just fix Months.
+FixMosPositive LONG,AUTO
+FixYrsNegative LONG,AUTO 
+    CODE
+    IF _Month = 0 AND _Year > 1801 THEN     !Date is (0, Days, Valid Year) - Year cannot be 1801 because we will be subtracting
+       _Month = 12       !Month Zero is December 
+       _Year -= 1        !of the Prior Year
+
+    ELSIF _Month < 0 AND _Year > 1801 THEN      !A Negative Month with Valid Year (cannot be 1802 since -= 1)
+       FixMosPositive = _Month % 12             !e.g. (-1 % 12) = +11 ; (-9 % 12) = +3  remaining Months of 12
+       FixYrsNegative = INT((_Month+1) /12) -1  !This does not need an INT() if assigning to a LONG. an INT() is needed if it were in a Message() or with REAL or DECIMAL
+       _Month = FixMosPositive       !Month as + Remaining Months of 12 i.e. Remainder 
+       _Year += FixYrsNegative       !Make Years Negative
+
+    ELSE
+       !Leave M,D,Y As Is ... its probably good ... could be (0,0,0) ...  it has _Months >0
+    END 
+    RETURN DATE(_Month, _Day, _Year)
+!----------------------------------
+DateFixed            FUNCTION(long _Month,long _Day,long _Year)!,LONG   !Deal with C5 C5.5 C6 DATE() function issues
 RetDate     long,auto
 YrsAdj      long,auto
   CODE
@@ -1193,7 +1222,7 @@ YrsAdj      long,auto
     return RetDate
 
 !------------------------------------
-DateAdjust           FUNCTION (LONG InDate, LONG YearAdj=0, LONG MonthAdj=0, LONG DayAdj=0, <SHORT ForceDay>)!,LONG ! Declare Procedure
+DateAdjust FUNCTION(LONG InDate, LONG YearAdj=0, LONG MonthAdj=0, LONG DayAdj=0, <SHORT ForceDay>)!,LONG
 BTDate      DATE,AUTO           !The Btreive date, any assignment auto converts to/from clarion standard date
 BT          GROUP,OVER(BTDate)  !Note Little Endian reversal
 Day             BYTE
