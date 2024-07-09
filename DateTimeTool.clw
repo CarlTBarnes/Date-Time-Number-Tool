@@ -141,7 +141,8 @@ DateTwo_BaseDate    LONG
 DateTwo_PlusDayz    LONG
 DateTwo_NetDate     LONG
 
-DateCalc_UseDateFixed  BYTE
+DateCalc_UseDateFixed  BYTE     !DateFixed() Version 1 handles C5 C5.5 C6 problems with Leap Years and out of range (M,D,Y)
+DateCalc_UseDateFixV2  BYTE     !DateFixV2() Version 2 handles C8 - C11 Month <= 0 Problem
 
 DateCalc_DBtwD1       LONG        !Days between dates
 DateCalc_DBtwD2       LONG
@@ -218,7 +219,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                     STRING(') = '),AT(165,26)
                     ENTRY(@n-9),AT(180,25,37,10),USE(DateCalc_BaseDate),SKIP,RIGHT
                     ENTRY(@d02b),AT(222,25,46,10),USE(DateCalc_BaseDate,, ?DateCalc_BaseDate:d2),SKIP
-                    BUTTON('Fi&x<0dh,0ah>-Mon<0dh,0ah>as<0dh,0ah>+Mos<0dh,0ah>-Years'),AT(275,20,24,37), |
+                    BUTTON('Fi&x<0dh,0ah>-Mon<0dh,0ah>as<0dh,0ah>+Mos<0dh,0ah>-Years'),AT(275,24,24,34), |
                             USE(?MonthNegativeFixBtn),SKIP,FONT(,8),TIP('Explain how to calculate Ne' & |
                             'gative Months<13,10>that may cause DATE() to return -1<13,10>by using P' & |
                             'ostive Months and Negative Years')
@@ -258,7 +259,8 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                             'e works. See DateFixed() on upper right.'),AT(6,84,123,19),USE(?DateCalc_DatePromblems:FYI) |
                             ,FONT(,8)
                 END
-                CHECK('&Use DateFixed() Function'),AT(180,15),USE(DateCalc_UseDateFixed),SKIP,FONT(,9)
+                CHECK('&Use DateFixed()'),AT(180,15),USE(DateCalc_UseDateFixed),SKIP,FONT(,9)
+                CHECK('Use Version 2'),AT(243,15),USE(DateCalc_UseDateFixV2),SKIP,FONT(,9)
                 PANEL,AT(6,107,295,2),USE(?Panel_Calc3),BEVEL(0,0,0600H)
                 GROUP,AT(5,110,286,23),USE(?CalcGroup_Adjust)
                     PROMPT('Date to &Adjust:'),AT(6,113),USE(?DateToAdjust:Prompt)
@@ -500,9 +502,10 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
             END
         
 !-- Calculate Dates Tab -------------------
-        OF ?DateCalc_UseDateFixed
-            POST(EVENT:Accepted, ?DateCalc_BaseMonth)            
-            POST(EVENT:Accepted, ?DateTwo_BaseMonth)            
+        OF ?DateCalc_UseDateFixed ; DateCalc_UseDateFixV2=0
+            POST(EVENT:Accepted, ?DateCalc_BaseMonth) ; POST(EVENT:Accepted, ?DateTwo_BaseMonth)
+        OF ?DateCalc_UseDateFixV2 ; DateCalc_UseDateFixed=0
+            POST(EVENT:Accepted, ?DateCalc_BaseMonth) ; POST(EVENT:Accepted, ?DateTwo_BaseMonth)        
         OF ?DateCalc_BaseMonth OROF ?DateCalc_BaseDay OROF ?DateCalc_BaseYear        
             DateCalc_BaseDate = DOO.DateOrDateFixed(DateCalc_BaseMonth,DateCalc_BaseDay,DateCalc_BaseYear)
             DO DateCalc_NetDate_Rtn
@@ -652,7 +655,7 @@ Clr_Text LONG(COLOR:Black) !Font Text
     DateCalc_NetYear  = DateCalc_BaseYear  + DateCalc_PlusYear 
     DateCalc_NetDate  = DOO.DateOrDateFixed(DateCalc_NetMonth,DateCalc_NetDay,DateCalc_NetYear)
     IF DateCalc_PlusMonth >=0 AND DateCalc_NetMonth >=0     THEN Clr_Back = -1 ; Clr_Text = -1.
-    IF DateCalc_UseDateFixed                                THEN Clr_Back = -1 ; Clr_Text = -1.
+    IF DateCalc_UseDateFixed OR DateCalc_UseDateFixV2       THEN Clr_Back = -1 ; Clr_Text = -1.
     IF BAND(KEYSTATE(),4000h)=4000h                         THEN Clr_Back = -1 ; Clr_Text = -1.     !Scroll Lock ON does not Warn to allow Screen Captures
     ?DateCalc_PlusMonth{PROP:Color}  = Clr_Back ; ?DateCalc_PlusMonth{PROP:FontColor}  = Clr_Text
     ?MonthNegativeFixBtn{PROP:Color} = Clr_Back ; ?MonthNegativeFixBtn{PROP:FontColor} = Clr_Text
@@ -895,6 +898,10 @@ ToolTipsRtn ROUTINE
            '<13,10>Test out of range values to see if there is still a use for DateFixed() ?' & |
            '<13,10>'
 
+    ?DateCalc_UseDateFixV2{PROP:TIP}='Check box to use DateFixV2() instead of runtime DATE() function.' & |
+            '<13,10>' & |    
+            '<13,10>Simpler code for C8 - C11 only needs to handle Month <<= Zero.' & |
+            '<13,10>Changes Negative Months to Add (Month % 12) then Subtracts Years.'
 
     ?Num_Syntax_AllParts{PROP:Tip}='Hover below this Syntax line to see tips on the values below ' & |
                             '<13,10>the parts: [currency][sign][fill] size [grouping][places][sign][currency][B]'
@@ -1011,11 +1018,13 @@ Num2DoGrp   GROUP(NumberQ),PRE(Num2Do)
 DOO.DateOrDateFixed PROCEDURE(long _Month,long _Day,long _Year)!,long   !Calls DATE() or DateFixed() based on DateCalc_UseDateFixed
 StdDate LONG,AUTO
     CODE
-    IF DateCalc_UseDateFixed THEN 
-       StdDate = DATEfixed(_Month,_Day,_Year)
+    IF DateCalc_UseDateFixV2 THEN 
+         StdDate = DATEfixV2(_Month,_Day,_Year)
+ ELSIF DateCalc_UseDateFixed THEN 
+         StdDate = DATEfixed(_Month,_Day,_Year)
     ELSE       
-       StdDate =      DATE(_Month,_Day,_Year)
-    END
+         StdDate =      DATE(_Month,_Day,_Year)
+    END    
     RETURN StdDate
 !---------------
 DOO.MonthNegativeFixBtnPressed  PROCEDURE()
@@ -1047,7 +1056,7 @@ FYI_Year  LONG
     FYI_Day   = DateCalc_BaseDay   + DateCalc_PlusDay  
     FYI_Year  = DateCalc_BaseYear  + DateCalc_PlusYear + FixYrsNeg
 
-    CASE Message('The C8 - C11 DATE() function passed a Negative or Zero Month will FAIL and Return -1.' & |
+    CASE Message('The C11 DATE() function passed a Negative or Zero Month will FAIL and Return -1.' & |
                 '||Instead of Negative Months "'& MinusMos &'"' & |
                 '|   Change to Positve Months  "+'& FixMosPos &'"' & |
                 '|   Change to Negative Years   "'& FixYrsNeg &'"' & |
