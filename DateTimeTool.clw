@@ -95,7 +95,7 @@ PopupPicks  procedure(long BtnFEQ, *string InOutTheChar, String Title),bool
 NumberQ QUEUE,pre(NumQ)
 Pic         STRING(32)      !@n000-    !NumQ:Pic
 RawValue    STRING(32)      !12345.67  !NumQ:RawValue
-Formatted   STRING(32)      !9/22/03   !NumQ:Formatted
+Formatted   STRING(32)      !9/22/03   !NumQ:Formatted      = Format(Value,@Picture) in LIST or ENTRY may not be the same
         END 
 NumberInpGrp GROUP(NumberQ),pre(NumInput)
 ! Pic         STRING(32)      !@n000-    !NumInput:Pic
@@ -330,32 +330,38 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                         'er Format as an Equate to Clipboard')
                 PROMPT('&Picture:'),AT(6,19),USE(?NumInput:Pic:Prompt)
                 ENTRY(@s32),AT(35,19,79,10),USE(NumInput:Pic)
-                PROMPT('&Value:'),AT(6,32),USE(?NumInput:RawValue:Prompt)
-                ENTRY(@s32),AT(35,32,79,10),USE(NumInput:RawValue)
-                PROMPT('Format:'),AT(6,45),USE(?NumInput:Formatted:Prompt)
-                ENTRY(@s32),AT(35,44,79,10),USE(NumInput:Formatted),COLOR(COLOR:BTNFACE),READONLY
-                BUTTON('&Add ->'),AT(81,57,34,11),USE(?AddNumPicBtn),FONT(,9),TIP('Add Picture to List')
-                BUTTON('Clear'),AT(50,57,28,11),USE(?ClearNumPicBtn),SKIP,FONT(,9),TIP('Clear Number' & |
+                PROMPT('&Value:'),AT(6,31),USE(?NumInput:RawValue:Prompt)
+                ENTRY(@s32),AT(35,31,79,10),USE(NumInput:RawValue)
+                PROMPT('Format('),AT(6,43),USE(?NumInput:Formatted:Prompt)
+                ENTRY(@s32),AT(35,43,79,10),USE(NumInput:Formatted),COLOR(COLOR:BTNFACE),TIP('FORMAT' & |
+                        '( Value, @Picture)<13,10>See the @Picture processed by the RTL Format() fun' & |
+                        'ction '),READONLY
+                PROMPT('Entry(@'),AT(6,55),USE(?NumInput:RawValue_Picture:Prompt)
+                ENTRY(@s32),AT(35,55,79,10),USE(NumInput:RawValue,, ?NumInput:RawValue_Picture),LEFT, |
+                        COLOR(COLOR:BTNFACE),TIP('ENTRY(@Picture),USE(Value) <13,10>See the @Picture' & |
+                        ' processed by the Screen Library '),READONLY
+                BUTTON('&Add ->'),AT(81,67,34,11),USE(?AddNumPicBtn),FONT(,9),TIP('Add Picture to List')
+                BUTTON('Clear'),AT(50,67,28,11),USE(?ClearNumPicBtn),SKIP,FONT(,9),TIP('Clear Number' & |
                         's List')
-                PROMPT('Double click to use Picture above ->'),AT(6,72,109),USE(?NumQListM2FYI),FONT(,8), |
+                PROMPT('Double click to use Picture above ->'),AT(6,80,109),USE(?NumQListM2FYI),FONT(,8), |
                         CENTER
                 LIST,AT(120,19,184,154),USE(?List:NumberQ),VSCROLL,FONT('Consolas',9),FROM(NumberQ), |
                         FORMAT('52L(2)|FM~Picture~C(0)@s32@48R(2)|M~Value~C(0)@s32@62R(2)|M~Formatte' & |
                         'd~C(0)@s32@')
-                GROUP('Deformat (v)  vs  (v,@picture)'),AT(5,83,110,61),USE(?DeFmt:Group),FONT(,9),BOXED
+                GROUP('Deformat (v)  vs  (v,@picture)'),AT(5,93,110,59),USE(?DeFmt:Group),FONT(,9),BOXED
+                    PROMPT('&Value:'),AT(10,102),USE(?DeFmt:RawValue:Prompt)
+                    ENTRY(@s32),AT(41,102,70,10),USE(DeFmt:RawValue)
+                    PROMPT('&Picture:'),AT(10,114),USE(?DeFmt:Picture:Prompt)
+                    ENTRY(@s32),AT(41,114,70,10),USE(DeFmt:Picture),TIP('Test DeFormat() with this @' & |
+                            'Picture<13,10>Some pictures have odd results, so use this test to be sure')
+                    PROMPT('DeFmt()'),AT(10,126),USE(?DeFmt:Format1:Prompt)
+                    ENTRY(@s32),AT(41,126,70,10),USE(DeFmt:Format1),COLOR(COLOR:BTNFACE),TIP('DeFrom' & |
+                            'at(Value)<13,10>DeFormat() without using Picture'),READONLY
+                    PROMPT('DeFmt@'),AT(11,139),USE(?DeFmt:Format2:Prompt)
+                    ENTRY(@s32),AT(41,138,70,10),USE(DeFmt:Format2),COLOR(COLOR:BTNFACE),TIP('DeFrom' & |
+                            'at(Value, @Picture)<13,10>DeFormat() Using Picture'),READONLY
                 END
-                PROMPT('&Value:'),AT(10,94),USE(?DeFmt:RawValue:Prompt)
-                ENTRY(@s32),AT(43,94,66,10),USE(DeFmt:RawValue)
-                PROMPT('&Picture:'),AT(10,106),USE(?DeFmt:Picture:Prompt)
-                ENTRY(@s32),AT(43,106,66,10),USE(DeFmt:Picture),TIP('Test DeFormat() with this @Pict' & |
-                        'ure<13,10>Some pictures have odd results, so use this test to be sure')
-                PROMPT('DeFmt()'),AT(10,118),USE(?DeFmt:Format1:Prompt)
-                ENTRY(@s32),AT(43,118,66,10),USE(DeFmt:Format1),COLOR(COLOR:BTNFACE),TIP('DeFromat(V' & |
-                        'alue)<13,10>DeFormat() without using Picture'),READONLY
-                PROMPT('DeFmt@'),AT(11,129),USE(?DeFmt:Format2:Prompt)
-                ENTRY(@s32),AT(43,129,66,10),USE(DeFmt:Format2),COLOR(COLOR:BTNFACE),TIP('DeFromat(V' & |
-                        'alue, @Picture)<13,10>DeFormat() Using Picture'),READONLY
-                PROMPT('Syntax has<0Dh,0Ah>Tool Tips'),AT(82,153,34,13),USE(?NumPicFYI_ToolTips),FONT(,8)
+                PROMPT('Syntax has<0Dh,0Ah>Tool Tips'),AT(82,154,34,13),USE(?NumPicFYI_ToolTips),FONT(,8)
                 STRING('@Emsn  @e#[. .. ` _.]#'),AT(5,168,,7),USE(?Syntax_AtE),FONT('Consolas',9)
                 STRING('@P[<<][#][x]Pp[B]'),AT(5,160,,7),USE(?Syntax_AtPp),FONT('Consolas',9)
                 GROUP,AT(2,175,276,16),USE(?Num_Syntax_Grp),FONT('Consolas',9)
@@ -404,7 +410,8 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
     DateCalc_AdjDtD1 = TheDate ; DateCalc_AdjDtDays = 30 ; POST(EVENT:Accepted,?DateCalc_AdjDtD1) 
     EvalCalc_Input = 'Format(Date(1+Month(Today()), 1,Year(Today()))-1,@d8)' ; POST(EVENT:Accepted,?EvalCalc_Input) 
     DeFmt:RawValue='(1,234.56)' ; DeFmt:Picture='@n(15.2)' ; POST(EVENT:Accepted,?DeFmt:RawValue)  !IMO @n pictures do not work so well with Deformat()
-    
+    POST(EVENT:Accepted, ?NumInput:Pic)
+
     DO ToolTipsRtn
     DO HolidayCalcRtn
     POST(EVENT:Accepted,?TheDate)
@@ -546,6 +553,8 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                     Message('Expected Clarion Pictures |are @N @E @P @D @T @S','Numbers')
                     SELECT(?NumInput:Pic)
                 END
+                ?NumInput:RawValue_Picture{PROP:Text}=CLIP(NumInput:Pic)
+                DISPLAY
         OF ?NumInput:RawValue
                 IF ~NumInput:RawValue THEN NumInput:RawValue='0'.
                 IF ~NUMERIC(NumInput:RawValue) THEN 
@@ -578,14 +587,15 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
             GET(NumberQ,CHOICE(?List:NumberQ))
             CASE KEYCODE()
             OF MouseLeft2
-               NumInput:Pic = NumQ:Pic
-               NumInput:RawValue = NumQ:RawValue
+               NumInput:Pic       = NumQ:Pic
+               NumInput:RawValue  = NumQ:RawValue
                NumInput:Formatted = NumQ:Formatted
+               POST(EVENT:Accepted, ?NumInput:Pic)
             OF MouseRight
                CASE POPUP('Copy Picture ' & NumberQ:Pic & '|Copy FORMAT( , ' & CLIP(NumberQ:Pic) &' )|-|Set Input to ' & NumberQ:Pic &'|Set DeFormat() to ' & NumberQ:Pic )
                OF 1 ;  SETCLIPBOARD(NumberQ:Pic)
                OF 2 ;  SETCLIPBOARD('FORMAT( ,' & NumberQ:Pic & ') !' & NumQ:Formatted )
-               OF 3 ;  NumberInpGrp = NumberQ ; display
+               OF 3 ;  NumberInpGrp = NumberQ ; POST(EVENT:Accepted, ?NumInput:Pic) ; Display
                OF 4 ;  DeFmt:Picture=NumQ:Pic ; DeFmt:RawValue=NumQ:RawValue ; display ; POST(EVENT:Accepted,?DeFmt:RawValue)
                END
             END
