@@ -12,7 +12,7 @@ WndPrvCls   CBWndPreviewClass,THREAD
              !* WndPrvCls *
 
     MAP
-Main        Procedure()
+MainTool   Procedure(STRING _WndAtX,STRING _WndAtY)
 DateFixed       PROCEDURE(long _Month,long _Day,long _Year),long        !Fixed to handle C5 - C6 problems with Month/Day out of Range
 DateFixV2       PROCEDURE(LONG _Month,LONG _Day,LONG _Year),LONG        !Version 2 for C8 - C11 that fails if Month Zero or Negative 
 DateAdjust      PROCEDURE(LONG InDate, LONG YearAdj=0, LONG MonthAdj=0, LONG DayAdj=0, <SHORT ForceDay>),LONG  !Uses  DateFixed() to handle problem values
@@ -36,10 +36,10 @@ TimeHMS         PROCEDURE(LONG Hours=0, LONG Mins=0, LONG Secs=0, LONG Hundredth
     CODE
     SYSTEM{PROP:MsgModeDefault}=MSGMODE:CANCOPY  ;  SYSTEM{7A58h}=1 !is PROP:PropVScroll added C11 
     SYSTEM{PROP:FontName}='Segoe UI' ; SYSTEM{PROP:FontSize}=11    
-    Main()
+    MainTool('','')
     return
 
-Main    Procedure()   
+MainTool  Procedure(STRING _WndAtX,STRING _WndAtY)   
 !Region Data Varibles -------------------------
 TheDate     DATE,AUTO
 QNdx        LONG            
@@ -392,7 +392,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
     COMPILE('!* WndPrvCls *',_WndPrvInclude_)   
         WndPrvCls.Init(2)               !Design Window at Runtime using CBWndPreviewClass with invisible button at top   
              !* WndPrvCls * COMPILE
-
+    IF _WndAtX THEN SETPOSITION(0,_WndAtX,_WndAtY).
     ?ReRunBtn{PROP:Tip}=?ReRunBtn{PROP:Tip} &'<13,10>'& Command('0')  !show EXE Name in ReRUn Tip
     IF THREAD()>1 THEN UNHIDE(?HaltBtn).
     0{PROP:StatusText,1}=TheDate &'  '& DOWname(TheDate) &' '& CLIP(FORMAT(TheDate,@d4))
@@ -611,7 +611,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
               display
            END 
 
-        OF ?ReRunBtn ; START(Main) ; UNHIDE(?HaltBtn)
+        OF ?ReRunBtn ; START(MainTool,,0{PROP:Xpos}+20,0{PROP:Ypos}+20) ; UNHIDE(?HaltBtn)
         OF ?HaltBtn  ; IF 1=Message('Terminate this Tool?',0{PROP:Text},ICON:Hand,'Keep Open|Halt Tool') THEN CYCLE.
                        LOOP Ndx=1 TO 64 ; POST(EVENT:CloseWindow,,Ndx,1) ; END
         END
