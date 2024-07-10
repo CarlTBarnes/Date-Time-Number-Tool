@@ -15,6 +15,7 @@ WndPrvCls   CBWndPreviewClass,THREAD
 MainTool   Procedure(STRING _WndAtX,STRING _WndAtY)
 DateFixed       PROCEDURE(long _Month,long _Day,long _Year),long        !Fixed to handle C5 - C6 problems with Month/Day out of Range
 DateFixV2       PROCEDURE(LONG _Month,LONG _Day,LONG _Year),LONG        !Version 2 for C8 - C11 that fails if Month Zero or Negative 
+UnitTest_DateFixed PROCEDURE()
 DateAdjust      PROCEDURE(LONG InDate, LONG YearAdj=0, LONG MonthAdj=0, LONG DayAdj=0, <SHORT ForceDay>),LONG  !Uses  DateFixed() to handle problem values
 DateSplit       PROCEDURE(LONG Date2Split, <*? OutMonth>, <*? OutDay>, <*? OutYear>)
 DB              PROCEDURE(STRING DebugMessage)  !OutputDebugString
@@ -35,7 +36,8 @@ TimeHMS         PROCEDURE(LONG Hours=0, LONG Mins=0, LONG Secs=0, LONG Hundredth
 
     CODE
     SYSTEM{PROP:MsgModeDefault}=MSGMODE:CANCOPY  ;  SYSTEM{7A58h}=1 !is PROP:PropVScroll added C11 
-    SYSTEM{PROP:FontName}='Segoe UI' ; SYSTEM{PROP:FontSize}=11    
+    SYSTEM{PROP:FontName}='Segoe UI' ; SYSTEM{PROP:FontSize}=11  
+        IF 0=1 THEN UnitTest_DateFixed().  !If you change Date Fixed V1 or V2 Code then run this to Unit Test by making IF 1=1
     MainTool('','')
     return
 
@@ -1049,13 +1051,15 @@ FYI_Year  LONG
     CODE
     SELECT(?DateCalc_PlusMonth)
     MinusMos = DateCalc_PlusMonth    !A Shorter Variable
-    IF MinusMos >= 0 THEN 
-       MakNegMos = (DateCalc_BaseMonth * -1) - 1
-       CASE Message('The Change Month "' & MinusMos &'" is not negative so there is nonthing to Fix.' & |
+    IF MinusMos >= 0 THEN   !There is no problem ... offer to mess it up
+       MakNegMos = CHOOSE(DateCalc_BaseMonth<0, DateCalc_BaseMonth, (DateCalc_BaseMonth * -1) - 1 )
+       CASE Message('The Change Month "' & MinusMos &'" is not negative so there is nothing to Fix.' & |
                     '||Click "Make Negative" and I''ll change Month to "' & MakNegMos &'" to create a problem.' , | 
                     'Negative Month',,'Close|Make Negative')
        OF 1 ; RETURN
-       OF 2 ; MinusMos = MakNegMos ; DateCalc_PlusMonth = MakNegMos ; DO DateCalc_NetDate_Rtn ; DISPLAY
+       OF 2 ; MinusMos = MakNegMos ; DateCalc_PlusMonth = MakNegMos
+              IF DateCalc_BaseMonth<0 THEN DateCalc_BaseMonth=1.
+              DO DateCalc_NetDate_Rtn ; DISPLAY
        END 
     END
     FixMosPos = MinusMos % 12               !e.g. (-1 % 12) = +11 ; (-9 % 12) = +3  remainder of year
@@ -1183,19 +1187,18 @@ DateFixV2  PROCEDURE(LONG _Month,LONG _Day,LONG _Year)!,LONG        !Version 2 f
 FixMosPositive LONG,AUTO
 FixYrsNegative LONG,AUTO 
     CODE
-    IF _Month = 0 AND _Year > 1801 THEN     !Date is (0, Days, Valid Year) - Year cannot be 1801 because we will be subtracting
-       _Month = 12       !Month Zero is December 
-       _Year -= 1        !of the Prior Year
-
-    ELSIF _Month < 0 AND _Year > 1801 THEN      !A Negative Month with Valid Year (cannot be 1802 since -= 1)
-       FixMosPositive = _Month % 12             !e.g. (-1 % 12) = +11 ; (-9 % 12) = +3  remaining Months of 12
-       FixYrsNegative = INT((_Month+1) /12) -1  !This does not need an INT() if assigning to a LONG. an INT() is needed if it were in a Message() or with REAL or DECIMAL
-       _Month = FixMosPositive       !Month as + Remaining Months of 12 i.e. Remainder 
-       _Year += FixYrsNegative       !Make Years Negative
-
-    ELSE
-       !Leave M,D,Y As Is ... its probably good ... could be (0,0,0) ...  it has _Months >0
-    END 
+    IF _Month <= 0 AND _Year > 1801 THEN    !A problem Month <=0 with Valid Year (cannot be 1802 since -= 1)
+       IF _Month < 0 THEN                   !Negative  Month < 0 
+          FixMosPositive = _Month % 12             !e.g. (-1 % 12) = +11 ; (-9 % 12) = +3  remaining Months of 12
+          FixYrsNegative = INT((_Month+1) /12) -1  !This does not need an INT() if assigning to a LONG. an INT() is needed if it were in a Message() or with REAL or DECIMAL
+          _Month = FixMosPositive           !Month as + Remaining Months of 12 i.e. Remainder 
+          _Year += FixYrsNegative           !Make Years Negative  .. possible to be < 1801 but not expecting to work with that old of dates
+       END  !FYI "IF _Month=0" may be true if above (Month %12) sets Month=0, so do NOT make below an ELSIF _Month=0
+       IF _Month = 0 THEN                   !Date is (0, Days, Valid Year) - Year cannot be 1801 because we will be subtracting
+          _Month = 12                       !Month Zero is December 
+          _Year -= 1                        !   of the Prior Year
+       END     
+    END     
     RETURN DATE(_Month, _Day, _Year)
 !----------------------------------
 DateFixed            FUNCTION(long _Month,long _Day,long _Year)!,LONG   !Deal with C5 C5.5 C6 DATE() function issues
@@ -1461,4 +1464,89 @@ Estr    LONG,AUTO
     !   d + (d > 48) + 1) Mod 7)
 
 !--------------------------
-
+UnitTest_DateFixed PROCEDURE()
+Y LONG
+M LONG
+D LONG
+Fix1 LONG,AUTO
+Fix2 LONG,AUTO
+RtlD LONG,AUTO 
+CntTests LONG 
+CntFail  LONG 
+V2FixMos LONG
+V2FixDay LONG
+V2FixYrs LONG 
+YrBeg EQUATE(1850)
+YrEnd EQUATE(2100)
+TimeBegin  LONG 
+Window WINDOW('UnitTest DateFixed - Date Time Tool'),AT(1,1,287,75),GRAY,FONT('Segoe UI',10)
+        STRING('Status'),AT(17,22,253),USE(?StatusTxt),CENTER
+        STRING(@n-7~ y~),AT(4,57),USE(Y)
+        STRING(@n-7~ m~),AT(39,57),USE(M)
+        STRING(@n-7~ d~),AT(77,57),USE(D)
+        STRING(@n9),AT(165,57),USE(CntTests)
+        STRING(@n16~ Errors~b),AT(215,57),USE(CntFail),FONT(,,COLOR:Maroon)
+    END
+    CODE 
+    IF 2=Message('Test DateFixed() DateFixV2() with '& (YrEnd-YrBeg+1)*200*200 &' Dates ?' & |
+                 '||This can take a minute. Debug is output.', |
+                 'UnitTest DateFixed ?',,'Test|Cancel') THEN RETURN.
+    OPEN(Window)                 
+    TimeBegin=CLOCK()
+    ?StatusTxt{PROP:Text}='Started '& Format(TimeBegin,@t4) &' for Years '& YrBeg &' to '& YrEnd 
+    DISPLAY
+    DB('Unit Test DateFixed - Years '& YrBeg &' to '& YrEnd )
+LpT:    LOOP Y = YrBeg to YrEnd 
+           DB('Unit Test - Loop Year='& Y &' Month M=' & M &' CntTests='& CntTests &' CntFail='& CntFail )
+           DISPLAY
+LpM:       LOOP M = -99 TO 99       ! -12 TO 24 ! -99 TO 99   Note Negative Months seem to Drive SLOWWWW the RTL Date() function a LOT
+              DISPLAY(?M)
+LpD:          LOOP D = -99 TO 99    ! -35 TO 60 ! -99 TO 99
+                   CntTests += 1
+RepeatTestLabel:                   
+                   Fix1 = DateFixed(M,D,Y)
+                   Fix2 = DateFixV2(M,D,Y)
+                   IF M <= 0 THEN 
+                      RtlD = -1         !Calling Date(M,D,Y) with M<=Zero is VERY VERY VERY SLOW so don't do it, assume -1
+                   ELSE
+                      RtlD = Date(M,D,Y)
+                   END
+                   
+                   IF Fix1 = Fix2 THEN 
+                      IF M > 0 AND RtlD = Fix1  AND RtlD = Fix2 THEN 
+                         CYCLE
+                      ELSIF M <= 0 AND RtlD = -1 THEN   !Expect -1 so no report 
+                         CYCLE
+                      ELSIF M <= 0 AND RtlD <> -1 AND RtlD = Fix1  AND RtlD = Fix2 THEN    !Expect -1 so no report 
+                         CYCLE  !This used to Return -1... now its <> -1, BUT does NOT match Fix1,2
+                      END 
+                   END
+                   
+                   CntFail += 1
+                   DB('Unit Test - FAIL ('& M &','& D &','& Y &')  Fix1=' & Fix1 &' Fix2=' & Fix2 &' RtlD=' & RtlD &'  CntTests='& CntTests &' CntFail='& CntFail )
+                   DISPLAY
+                   CASE Message('Unit Test DateFixed() and DateFixv2 ' & |
+                                '||Test Date( '& M &' months, '& D &' days, '& Y &' years) ' & |
+                                '||DateFixed()='& Fix1 &' = '& Format(Fix1,@D02)  & |
+                                '|DateFixV2()=' & Fix2 &' = '& Format(Fix2,@D02) &'  V2( '& V2FixMos &' months, '& V2FixDay &' days, '& V2FixYrs &' years) '& |
+                                '|RTL Date()='  & RtlD &' = '& Format(RtlD,@D02)  & |
+                                '|' & |
+                                '','UnitTest DateFixed', ICON:Exclamation,'Continue |Next Month|Next Year|Abort Tests|Repeat Test')
+                   OF 1 !Continue                                
+                   OF 2 ; Cycle LpM: !Next Month
+                   OF 3 ; M=99999 ; BREAK !Next Year
+                   OF 4 ; M=99999 ; Y=9999 ; BREAK  !Abort
+                   OF 5 
+                          GOTO RepeatTestLabel:   !Could set Debugger to Break Point here  
+                   END
+                   
+              END !D loop
+           END !M loop 
+           DB('Unit Test - Finished Year '& Y &' CntTests='& CntTests &' CntFail='& CntFail )
+        END !Y loop
+        DISPLAY
+        Message('Tested ' & CntTests &'  --  Failed ' & CntFail &|
+                '||Time Begin='& FORMAT(TimeBegin,@t04) & |
+                '|Time Elapsed='& (CLOCK()-TimeBegin)/100 &' seconds', |
+                'UnitTest DateFixed Done')
+        RETURN 
