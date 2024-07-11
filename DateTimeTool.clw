@@ -137,6 +137,7 @@ DateCalc_NetMonth   LONG
 DateCalc_NetDay     LONG
 DateCalc_NetYear    LONG
 DateCalc_NetDate    LONG
+DateCalc_Change     STRING(9)   !Net-Base
 DateCalc_Base_DOW   STRING(5)   !E.g. 3 Wed
 DateCalc_NetD_DOW   STRING(5)
 
@@ -238,7 +239,8 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                     PROMPT('+/- M,D,Y'),AT(24,37),USE(?DateCalc_Plus:Prompt)
                     ENTRY(@N-7),AT(60,37,28,10),USE(DateCalc_PlusMonth),RIGHT
                     ENTRY(@n-7),AT(95,37,28,10),USE(DateCalc_PlusDay),RIGHT
-                    ENTRY(@n-5),AT(129,37,28,10),USE(DateCalc_PlusYear),RIGHT
+                    ENTRY(@n-5),AT(129,37,28,10),USE(DateCalc_PlusYear),RIGHT 
+                    STRING(@s9),AT(178,37,37,10),USE(DateCalc_Change),RIGHT 
                     PROMPT('= Date('),AT(31,49),USE(?DateCalc_Net:Prompt)
                     ENTRY(@n-7),AT(60,49,28,10),USE(DateCalc_NetMonth),SKIP,RIGHT,COLOR(COLOR:BTNFACE), |
                             READONLY
@@ -251,7 +253,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                             READONLY
                     ENTRY(@d02b),AT(222,49,44,10),USE(DateCalc_NetDate,, ?DateCalc_NetDate:d2),SKIP, |
                             COLOR(COLOR:BTNFACE),READONLY
-                    STRING(@s5),AT(271,49,26,10),USE(DateCalc_NetD_DOW)
+                    STRING(@s5),AT(271,49,26,10),USE(DateCalc_NetD_DOW)                    
                 END
                 PANEL,AT(6,63,295,2),USE(?Panel_Calc2),BEVEL(0,0,0600H)
                 GROUP,AT(5,67,266,38),USE(?DateTwo_Grp)
@@ -683,6 +685,8 @@ DateCalc_NetDate_Rtn ROUTINE
     DATA
 Clr_Back LONG(0DDDDFFh)    !Background  Light Red  RGB (255,221,221) 
 Clr_Text LONG(COLOR:Black) !Font Text
+NetChg LONG
+NetTxt STRING(16) 
     CODE
     DateCalc_NetMonth = DateCalc_BaseMonth + DateCalc_PlusMonth
     DateCalc_NetDay   = DateCalc_BaseDay   + DateCalc_PlusDay  
@@ -695,6 +699,11 @@ Clr_Text LONG(COLOR:Black) !Font Text
     ?MonthNegativeFixBtn{PROP:Color} = Clr_Back ; ?MonthNegativeFixBtn{PROP:FontColor} = Clr_Text 
     DateCalc_Base_DOW = DOWNumAndName(DateCalc_BaseDate)
     DateCalc_NetD_DOW = DOWNumAndName(DateCalc_NetDate)
+    IF DateCalc_NetDate>=4 AND DateCalc_BaseDate>=4 THEN 
+       NetChg = DateCalc_NetDate - DateCalc_BaseDate
+       NetTxt = CHOOSE(NetChg<0,'','+') & NetChg
+    END
+    DateCalc_Change = NetTxt
     EXIT
 
 DateTwo_NetDate_Rtn ROUTINE 
