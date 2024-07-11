@@ -29,6 +29,26 @@ The screen capture shows subtracting 9 months from 7 will pass -2 months and fai
 ![Calc Tab Fix Mon](images/readme2n2.png)
 
 The formula works for any number of Negative Months e.g. -30 Months can be done as (-30 % 12) = +6 Months Added and (-30+1)/12 -1 ) = -3 Years Subtracted.
+
+```Clarion
+DateFixV2  PROCEDURE(LONG _Month,LONG _Day,LONG _Year)!,LONG   !Version 2 for C8 - C11 that fails if Month Zero or Negative
+FixMosPositive LONG,AUTO
+FixYrsNegative LONG,AUTO
+    CODE
+    IF _Month <= 0 AND _Year > 1801 THEN    !Month <=0 with Valid Year (can't = 1801 since -1=1800 is invalid and Date(,,1800) returns -1)
+       IF _Month < 0 THEN                   !Negative  Month < 0
+          FixMosPositive = _Month % 12             !e.g. (-1 % 12) = +11 ; (-9 % 12) = +3  remaining Months of 12
+          FixYrsNegative = INT((_Month+1) /12) -1  !This does not need an INT() if assigning to a LONG. an INT() is needed if it were in a Message() or with REAL or DECIMAL
+          _Month = FixMosPositive           !Month as + Remaining Months of 12
+          _Year += FixYrsNegative           !Make Years Negative  .. possible to be < 1801 but not expecting to work with that old of dates
+       END  !FYI "IF _Month=0" may be true if above (Month %12) sets Month=0, so do NOT make below an ELSIF _Month=0
+       IF _Month = 0 THEN                   !Date is (0, Days, Valid Year)
+          _Month = 12                       !   Month Zero is December
+          _Year -= 1                        !      of the Prior Year
+       END     
+    END     
+    RETURN DATE(_Month, _Day, _Year
+```
 ___
 ### Holiday Dates
 
