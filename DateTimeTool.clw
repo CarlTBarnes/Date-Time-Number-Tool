@@ -400,7 +400,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
     0{PROP:StatusText,1}=TheDate &'  '& DOWname(TheDate) &' '& CLIP(FORMAT(TheDate,@d4))
     0{PROP:StatusText,2}='EXE RTL ' & SYSTEM{PROP:ExeVersion,2} &'.'& SYSTEM{PROP:ExeVersion,3} & |
                        ', DLL RTL ' & SYSTEM{PROP:LibVersion,2} &'.'& SYSTEM{PROP:LibVersion,3}
-    ?List:TimeQ{PROP:LineHeight} = ?List:TImeQ{PROP:LineHeight} + 1 
+    ?List:TimeQ{PROP:LineHeight} = ?List:TimeQ{PROP:LineHeight} + 1 
     !like it tighter ?List:NumberQ{PROP:LineHeight} = ?List:NumberQ{PROP:LineHeight} + 1
     ?List:DatesQ{PROP:LineHeight}= ?List:DatesQ{PROP:LineHeight} + 1 
     ?List:DatesQ{PROPLIST:HasSortColumn}=1 
@@ -1477,31 +1477,28 @@ CntFail  LONG
 V2FixMos LONG
 V2FixDay LONG
 V2FixYrs LONG 
-YrBeg EQUATE(1850)
-YrEnd EQUATE(2100)
+YrBeg EQUATE(1820)
+YrEnd EQUATE(2400)
 TimeBegin  LONG 
 Window WINDOW('UnitTest DateFixed - Date Time Tool'),AT(1,1,287,75),GRAY,FONT('Segoe UI',10)
-        STRING('Status'),AT(17,22,253),USE(?StatusTxt),CENTER
+        STRING('Status'),AT(17,19,253),USE(?StatusTxt),CENTER
         STRING(@n-7~ y~),AT(4,57),USE(Y)
         STRING(@n-7~ m~),AT(39,57),USE(M)
-        STRING(@n-7~ d~),AT(77,57),USE(D)
-        STRING(@n9),AT(165,57),USE(CntTests)
-        STRING(@n16~ Errors~b),AT(215,57),USE(CntFail),FONT(,,COLOR:Maroon)
+        STRING(@n-7~ d~),AT(77,57),USE(D)                
+        STRING(@n10),AT(227,57),USE(CntTests),RIGHT
+        STRING(@n16~ Errors~b),AT(202,46),USE(CntFail),RIGHT,FONT(,,COLOR:Maroon)
     END
     CODE 
-    IF 2=Message('Test DateFixed() DateFixV2() with '& (YrEnd-YrBeg+1)*200*200 &' Dates ?' & |
+    IF 2=Message('Test DateFixed() DateFixV2() '& YrBeg &'-'& YrEnd &' with '& (YrEnd-YrBeg+1)*200*200 &' Dates ?' & |
                  '||This can take a minute. Debug is output.', |
                  'UnitTest DateFixed ?',,'Test|Cancel') THEN RETURN.
     OPEN(Window)                 
     TimeBegin=CLOCK()
     ?StatusTxt{PROP:Text}='Started '& Format(TimeBegin,@t4) &' for Years '& YrBeg &' to '& YrEnd 
-    DISPLAY
-    DB('Unit Test DateFixed - Years '& YrBeg &' to '& YrEnd )
+    DISPLAY                     ; DB('Unit Test DateFixed - '& ?StatusTxt{PROP:Text} )
 LpT:    LOOP Y = YrBeg to YrEnd 
-           DB('Unit Test - Loop Year='& Y &' Month M=' & M &' CntTests='& CntTests &' CntFail='& CntFail )
-           DISPLAY
+           DISPLAY              ; DB('Unit Test - Loop Year='& Y &' Tests='& CntTests &' Failed='& CntFail )
 LpM:       LOOP M = -99 TO 99       ! -12 TO 24 ! -99 TO 99   Note Negative Months seem to Drive SLOWWWW the RTL Date() function a LOT
-              DISPLAY(?M)
 LpD:          LOOP D = -99 TO 99    ! -35 TO 60 ! -99 TO 99
                    CntTests += 1
 RepeatTestLabel:                   
@@ -1512,6 +1509,7 @@ RepeatTestLabel:
                    ELSE
                       RtlD = Date(M,D,Y)
                    END
+                   ! DB('Tested ('& M &','& D &','& Y &')  Fix1=' & Fix1 &' Fix2=' & Fix2 &' RtlD=' & RtlD &'  '& Format(Fix2,@D02-) )  !See All Tests ... too much debug
                    
                    IF Fix1 = Fix2 THEN 
                       IF M > 0 AND RtlD = Fix1  AND RtlD = Fix2 THEN 
@@ -1519,13 +1517,12 @@ RepeatTestLabel:
                       ELSIF M <= 0 AND RtlD = -1 THEN   !Expect -1 so no report 
                          CYCLE
                       ELSIF M <= 0 AND RtlD <> -1 AND RtlD = Fix1  AND RtlD = Fix2 THEN    !Expect -1 so no report 
-                         CYCLE  !This used to Return -1... now its <> -1, BUT does NOT match Fix1,2
+                         CYCLE  !Date(-M,,) used to Return -1... now its <> -1 and =Fix1 so SV fixed? Else fall thru and show failed ... will NEVER happen due to above if M<=0 sets RtlD=-1
                       END 
                    END
                    
-                   CntFail += 1
-                   DB('Unit Test - FAIL ('& M &','& D &','& Y &')  Fix1=' & Fix1 &' Fix2=' & Fix2 &' RtlD=' & RtlD &'  CntTests='& CntTests &' CntFail='& CntFail )
-                   DISPLAY
+                   CntFail += 1                   
+                   DISPLAY ; DB('Unit Test - FAIL ('& M &','& D &','& Y &')  Fix1=' & Fix1 &' Fix2=' & Fix2 &' RtlD=' & RtlD &'  Tests='& CntTests &' Failed='& CntFail )
                    CASE Message('Unit Test DateFixed() and DateFixv2 ' & |
                                 '||Test Date( '& M &' months, '& D &' days, '& Y &' years) ' & |
                                 '||DateFixed()='& Fix1 &' = '& Format(Fix1,@D02)  & |
@@ -1533,21 +1530,17 @@ RepeatTestLabel:
                                 '|RTL Date()='  & RtlD &' = '& Format(RtlD,@D02)  & |
                                 '|' & |
                                 '','UnitTest DateFixed', ICON:Exclamation,'Continue |Next Month|Next Year|Abort Tests|Repeat Test')
-                   OF 1 !Continue                                
-                   OF 2 ; Cycle LpM: !Next Month
-                   OF 3 ; M=99999 ; BREAK !Next Year
+                   OF 1                             !Continue                                
+                   OF 2 ; Cycle LpM:                !Next Month
+                   OF 3 ; M=99999 ; BREAK           !Next Year
                    OF 4 ; M=99999 ; Y=9999 ; BREAK  !Abort
-                   OF 5 
-                          GOTO RepeatTestLabel:   !Could set Debugger to Break Point here  
-                   END
-                   
+                   OF 5                             !Repeat Test
+                          GOTO RepeatTestLabel:     !Could set Debugger to Break Point on this Line to step thru code again  
+                   END                   
               END !D loop
-           END !M loop 
-           DB('Unit Test - Finished Year '& Y &' CntTests='& CntTests &' CntFail='& CntFail )
-        END !Y loop
+           END    !M loop 
+        END       !Y loop
         DISPLAY
-        Message('Tested ' & CntTests &'  --  Failed ' & CntFail &|
-                '||Time Begin='& FORMAT(TimeBegin,@t04) & |
-                '|Time Elapsed='& (CLOCK()-TimeBegin)/100 &' seconds', |
-                'UnitTest DateFixed Done')
+        MESSAGE('Tested: ' & CntTests &'  --  Failed: ' & CntFail &|
+                '||'& (CLOCK()-TimeBegin)/100 &' seconds to run','UnitTest DateFixed Done')
         RETURN 
