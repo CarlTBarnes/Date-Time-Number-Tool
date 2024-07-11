@@ -208,7 +208,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
             END
             TAB(' &Calc '),USE(?Tab:Calc)
                 GROUP,AT(5,15,299,45),USE(?Date_Calc:Grp)
-                    PROMPT('Calc&ulate Date('),AT(6,25),USE(?DateCalculate:Prompt)
+                    PROMPT('&Input Date('),AT(19,25),USE(?DateCalculate:Prompt)
                     PROMPT('&Month'),AT(59,15,,8),USE(?DateCalc_BaseMonth:Prompt)
                     ENTRY(@N-7),AT(60,25,28,10),USE(DateCalc_BaseMonth),RIGHT,TIP('A Negative Month ' & |
                             'will cause DATE() to Fail and Return -1')
@@ -225,11 +225,11 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                             USE(?MonthNegativeFixBtn),SKIP,FONT(,8),TIP('Explain how to calculate Ne' & |
                             'gative Months<13,10>that may cause DATE() to return -1<13,10>by using P' & |
                             'ostive Months and Negative Years')
-                    PROMPT('Change +/-'),AT(17,37),USE(?DateCalc_Plus:Prompt)
+                    PROMPT('+/- M,D,Y'),AT(23,37),USE(?DateCalc_Plus:Prompt)
                     ENTRY(@N-7),AT(60,37,28,10),USE(DateCalc_PlusMonth),RIGHT
                     ENTRY(@n-7),AT(95,37,28,10),USE(DateCalc_PlusDay),RIGHT
                     ENTRY(@n-5),AT(129,37,28,10),USE(DateCalc_PlusYear),RIGHT
-                    PROMPT('Net Date('),AT(23,49),USE(?DateCalc_Net:Prompt)
+                    PROMPT('= Date('),AT(30,49),USE(?DateCalc_Net:Prompt)
                     ENTRY(@n-7),AT(60,49,28,10),USE(DateCalc_NetMonth),SKIP,RIGHT,COLOR(COLOR:BTNFACE), |
                             READONLY
                     ENTRY(@n-7),AT(95,49,28,10),USE(DateCalc_NetDay),SKIP,RIGHT,COLOR(COLOR:BTNFACE), |
@@ -244,7 +244,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                 END
                 PANEL,AT(6,63,295,2),USE(?Panel_Calc2),BEVEL(0,0,0600H)
                 GROUP,AT(5,67,266,38),USE(?DateTwo_Grp)
-                    PROMPT('Another Date('),AT(6,68),USE(?DateCalcAnother:Prompt)
+                    PROMPT('&Another Date('),AT(6,68),USE(?DateCalcAnother:Prompt)
                     ENTRY(@N-7),AT(60,68,28,10),USE(DateTwo_BaseMonth),RIGHT
                     ENTRY(@n-7),AT(95,68,28,10),USE(DateTwo_BaseDay),RIGHT
                     SPIN(@n4),AT(129,68,28,10),USE(DateTwo_BaseYear),RIGHT,RANGE(1801,9999)
@@ -261,7 +261,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                             'e works. See DateFixed() on upper right.'),AT(6,84,123,19),USE(?DateCalc_DatePromblems:FYI) |
                             ,FONT(,8)
                 END
-                CHECK('&Use DateFixed()'),AT(180,15),USE(DateCalc_UseDateFixed),SKIP,FONT(,9)
+                CHECK('Use DateFixed()'),AT(180,15),USE(DateCalc_UseDateFixed),SKIP,FONT(,9)
                 CHECK('Use Version 2'),AT(243,15),USE(DateCalc_UseDateFixV2),SKIP,FONT(,9)
                 PANEL,AT(6,107,295,2),USE(?Panel_Calc3),BEVEL(0,0,0600H)
                 GROUP,AT(5,110,286,23),USE(?CalcGroup_Adjust)
@@ -348,12 +348,12 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                 PROMPT('Double click to use Picture above ->'),AT(6,80,109),USE(?NumQListM2FYI),FONT(,8), |
                         CENTER
                 LIST,AT(120,19,184,154),USE(?List:NumberQ),VSCROLL,FONT('Consolas',9),FROM(NumberQ), |
-                        FORMAT('52L(2)|FM~Picture~C(0)@s32@48R(2)|M~Value~C(0)@s32@62R(2)|M~Formatte' & |
-                        'd~C(0)@s32@')
+                        FORMAT('52L(2)|FM~Picture~C(0)@s32@48R(2)|M~Value~C(0)@s32@62R(2)|M~Format(V' & |
+                        ',@)~C(0)@s32@')
                 GROUP('Deformat (v)  vs  (v,@picture)'),AT(5,93,110,59),USE(?DeFmt:Group),FONT(,9),BOXED
-                    PROMPT('&Value:'),AT(10,102),USE(?DeFmt:RawValue:Prompt)
+                    PROMPT('Va&lue:'),AT(10,102),USE(?DeFmt:RawValue:Prompt)
                     ENTRY(@s32),AT(41,102,70,10),USE(DeFmt:RawValue)
-                    PROMPT('&Picture:'),AT(10,114),USE(?DeFmt:Picture:Prompt)
+                    PROMPT('P&icture:'),AT(10,114),USE(?DeFmt:Picture:Prompt)
                     ENTRY(@s32),AT(41,114,70,10),USE(DeFmt:Picture),TIP('Test DeFormat() with this @' & |
                             'Picture<13,10>Some pictures have odd results, so use this test to be sure')
                     PROMPT('DeFmt()'),AT(10,126),USE(?DeFmt:Format1:Prompt)
@@ -401,6 +401,7 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
     0{PROP:StatusText,2}='EXE RTL ' & SYSTEM{PROP:ExeVersion,2} &'.'& SYSTEM{PROP:ExeVersion,3} & |
                        ', DLL RTL ' & SYSTEM{PROP:LibVersion,2} &'.'& SYSTEM{PROP:LibVersion,3}
     ?List:TimeQ{PROP:LineHeight} = ?List:TImeQ{PROP:LineHeight} + 1 
+    !like it tighter ?List:NumberQ{PROP:LineHeight} = ?List:NumberQ{PROP:LineHeight} + 1
     ?List:DatesQ{PROP:LineHeight}= ?List:DatesQ{PROP:LineHeight} + 1 
     ?List:DatesQ{PROPLIST:HasSortColumn}=1 
 
@@ -1187,7 +1188,7 @@ DateFixV2  PROCEDURE(LONG _Month,LONG _Day,LONG _Year)!,LONG        !Version 2 f
 FixMosPositive LONG,AUTO
 FixYrsNegative LONG,AUTO 
     CODE
-    IF _Month <= 0 AND _Year > 1801 THEN    !A problem Month <=0 with Valid Year (cannot be 1802 since -= 1)
+    IF _Month <= 0 AND _Year > 1801 THEN    !Month <=0 with Valid Year (can't = 1801 since -1=1800 is invalid and Date(,,1800) returns -1)
        IF _Month < 0 THEN                   !Negative  Month < 0 
           FixMosPositive = _Month % 12             !e.g. (-1 % 12) = +11 ; (-9 % 12) = +3  remaining Months of 12
           FixYrsNegative = INT((_Month+1) /12) -1  !This does not need an INT() if assigning to a LONG. an INT() is needed if it were in a Message() or with REAL or DECIMAL
