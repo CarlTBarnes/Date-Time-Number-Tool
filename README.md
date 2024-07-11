@@ -16,7 +16,7 @@ Date_7_4_2024  EQUATE(81638)  !20240704  07/04/2024  2024-07-04  04-JUL-2024  Th
 ___
 ### Date Calculations
 
-Test various calculations using the DATE() function and/or entered dates or date serial numbers. This allows you to verify that passing out of range (Month, Day, Year) values to  DATE() function work as expected.
+Test various calculations using the DATE() function and/or entered dates or date serial numbers. This allows you to verify that passing out of range (Month, Day, Year) values to  DATE() function work as expected. All calculations show Date Serial Number and formatted Date. All show Day of Week Number (0-6) and Name (Sunday-Saturday) to assist with DOW type formulas e.g. find the first, next, or last Friday.
 
 ![Calc tab](images/readme2.png)
 
@@ -24,11 +24,11 @@ The DATE(m,d,y) function fails if passed a Month value of Zero or Negative and r
 
 ![Calc Tab Fix Mon](images/readme2n1.png)
 
-The screen capture shows subtracting 9 months from 7 will pass -2 and fail. Instead add 3 months and subtract 1 year.
+The screen capture shows subtracting 9 months from 7 will pass -2 months and fail. Instead add 3 months and subtract 1 year.
 
 ![Calc Tab Fix Mon](images/readme2n2.png)
 
-The formula works for any number of Negative Months e.g. -30 Months can be done as (-30 % 12) = +6 Months Added and ()(-30+1)/-12 +1 ) = 3 Years Subtracted.
+The formula works for any number of Negative Months e.g. -30 Months can be done as (-30 % 12) = +6 Months Added and (-30+1)/12 -1 ) = -3 Years Subtracted.
 ___
 ### Holiday Dates
 
