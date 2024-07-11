@@ -52,9 +52,9 @@ At the bottom are Equates for the parts of Time you can copy into your code.
 ___
 ### Number Pictures ... or Any Others @E @P @D @T @S
 
-Try out any @Picture and Value to see how it formats.
+Try out any @Picture and Value to see how it formats two ways: `Format(Value,@Picture)` function and `ENTRY(@Picture)` the screen library. Sometimes there is a difference. One place this is likely is with Any Screen.
 
-You can test how DeFromat() works with and without the @Picture for any Value.
+You can test how DeFormat() works with and without the @Picture for any Value. Common things to try would be a Date format like @D6 DD/MM/YYYY while no @Picture assumes @D2 MM/DD/YYYY.
 
 ![number tab](images/readme5.png)
 
