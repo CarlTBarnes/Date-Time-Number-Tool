@@ -5,8 +5,8 @@
     PROGRAM
     INCLUDE 'keycodes.clw'
 
-!_WndPrvInclude_     EQUATE(1)                   !Uncomment these 2 lines to add Wnd Preview Class
-!    Include('CbWndPreview.inc'),ONCE            ! https://github.com/CarlTBarnes/WindowPreview
+_WndPrvInclude_     EQUATE(1)                   !Uncomment these 2 lines to add Wnd Preview Class
+    Include('CbWndPreview.inc'),ONCE            ! https://github.com/CarlTBarnes/WindowPreview
     COMPILE('!* WndPrvCls *',_WndPrvInclude_) 
 WndPrvCls   CBWndPreviewClass,THREAD            
              !* WndPrvCls *
@@ -20,7 +20,7 @@ DateAdjust      PROCEDURE(LONG InDate, LONG YearAdj=0, LONG MonthAdj=0, LONG Day
 DateSplit       PROCEDURE(LONG Date2Split, <*? OutMonth>, <*? OutDay>, <*? OutYear>)
 DB              PROCEDURE(STRING DebugMessage)  !OutputDebugString
 DOWName         PROCEDURE(LONG Date2Dow),STRING
-DOWNumAndName   PROCEDURE(LONG Date2Dow),STRING    !Return "# Xxx" e.g. "3 Wed" to put on Calc Tab
+DOWNumInfo      PROCEDURE(LONG Date2Dow),STRING    !Return Day with %7 and Ordinal Number Info e.g. "Wed 3 2nd" to put on Calc Tab
 DOWOrdinal      PROCEDURE(LONG Date2Dow, BOOL OrdinalWord=0),STRING     !Return Original 1st 2nd 3rd or First Second
 EasterDate      PROCEDURE(USHORT Yr),LONG
 HolidayCheck    PROCEDURE(LONG pDate2Check,<*string HolidayName>,<*string DOWName>),BYTE     !0=No 1=Yes Weekday 2=Yes Weekend
@@ -138,8 +138,8 @@ DateCalc_NetDay     LONG
 DateCalc_NetYear    LONG
 DateCalc_NetDate    LONG
 DateCalc_Change     STRING(9)   !Net-Base
-DateCalc_Base_DOW   STRING(5)   !E.g. 3 Wed
-DateCalc_NetD_DOW   STRING(5)
+DateCalc_Base_DOW   STRING(9)   !E.g. "Wed 3 2nd"
+DateCalc_NetD_DOW   STRING(9)
 
 DateTwo_BaseMonth   LONG
 DateTwo_BaseDay     LONG
@@ -147,8 +147,8 @@ DateTwo_BaseYear    LONG
 DateTwo_BaseDate    LONG
 DateTwo_PlusDayz    LONG
 DateTwo_NetDate     LONG
-DateTwo_Base_DOW    STRING(5)   !E.g. 3 Wed
-DateTwo_NetD_DOW    STRING(5)
+DateTwo_Base_DOW    STRING(9)   !E.g. "Wed 3 2nd"
+DateTwo_NetD_DOW    STRING(9)
 
 DateCalc_UseDateFixed  BYTE     !DateFixed() Version 1 handles C5 C5.5 C6 problems with Leap Years and out of range (M,D,Y)
 DateCalc_UseDateFixV2  BYTE     !DateFixV2() Version 2 handles C8 - C11 Month <= 0 Problem
@@ -157,13 +157,13 @@ DateCalc_DBtwD1       LONG        !Days between dates
 DateCalc_DBtwD2       LONG
 DateCalc_DBtwDdays    LONG
 DateCalc_DBtwDAge     STRING(16) 
-DateCalc_DBtwD1_DOW   STRING(5)
-DateCalc_DBtwD2_DOW   STRING(5)
+DateCalc_DBtwD1_DOW   STRING(9)
+DateCalc_DBtwD2_DOW   STRING(9)
 DateCalc_AdjDtD1      LONG        !Add days to date
 DateCalc_AdjDtDays    LONG
 DateCalc_AdjDtD2      LONG        !Add days to date 
-DateCalc_AdjDtD1_DOW  STRING(5)
-DateCalc_AdjDtD2_DOW  STRING(5)
+DateCalc_AdjDtD1_DOW  STRING(9)
+DateCalc_AdjDtD2_DOW  STRING(9)
 EvalCalc_Input  STRING(255)
 EvalCalc_Result STRING(255)
 
@@ -229,18 +229,18 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                     STRING('/'),AT(125,14),FONT(,,,FONT:bold)
                     PROMPT('&Year'),AT(134,15,,8),USE(?DateCalc_BaseYear:Prompt)
                     SPIN(@n4),AT(129,25,28,10),USE(DateCalc_BaseYear),RIGHT,RANGE(1801,9999)
-                    STRING(') = '),AT(165,26)
-                    ENTRY(@n-9),AT(180,25,37,10),USE(DateCalc_BaseDate),SKIP,RIGHT
-                    ENTRY(@d02b),AT(222,25,44,10),USE(DateCalc_BaseDate,, ?DateCalc_BaseDate:d2),SKIP
-                    STRING(@s5),AT(271,25,26,10),USE(DateCalc_Base_DOW)
+                    STRING(') = '),AT(162,26)
+                    ENTRY(@n-9),AT(177,25,34,10),USE(DateCalc_BaseDate),SKIP,RIGHT
+                    ENTRY(@d02b),AT(216,25,43,10),USE(DateCalc_BaseDate,, ?DateCalc_BaseDate:d2),SKIP
+                    STRING(@s9),AT(263,25),USE(DateCalc_Base_DOW)
                     BUTTON('Fi&x<0dh,0ah>-Mon'),AT(5,46,21,15),USE(?MonthNegativeFixBtn),SKIP,FONT(,8), |
                             TIP('Explain how to calculate Negative Months<13,10>that may cause DATE(' & |
                             ') to return -1<13,10>by using Postive Months and Negative Years  <13,10>')
                     PROMPT('+/- M,D,Y'),AT(24,37),USE(?DateCalc_Plus:Prompt)
                     ENTRY(@N-7),AT(60,37,28,10),USE(DateCalc_PlusMonth),RIGHT
                     ENTRY(@n-7),AT(95,37,28,10),USE(DateCalc_PlusDay),RIGHT
-                    ENTRY(@n-5),AT(129,37,28,10),USE(DateCalc_PlusYear),RIGHT 
-                    STRING(@s9),AT(178,37,37,10),USE(DateCalc_Change),RIGHT 
+                    ENTRY(@n-5),AT(129,37,28,10),USE(DateCalc_PlusYear),RIGHT
+                    STRING(@s9),AT(172,37,37,10),USE(DateCalc_Change),RIGHT
                     PROMPT('= Date('),AT(31,49),USE(?DateCalc_Net:Prompt)
                     ENTRY(@n-7),AT(60,49,28,10),USE(DateCalc_NetMonth),SKIP,RIGHT,COLOR(COLOR:BTNFACE), |
                             READONLY
@@ -248,63 +248,63 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
                             READONLY
                     ENTRY(@n-6),AT(129,49,28,10),USE(DateCalc_NetYear),SKIP,RIGHT,COLOR(COLOR:BTNFACE), |
                             READONLY
-                    STRING(') = '),AT(165,49)
-                    ENTRY(@n-9),AT(180,49,37,10),USE(DateCalc_NetDate),SKIP,RIGHT,COLOR(COLOR:BTNFACE), |
+                    STRING(') = '),AT(162,49)
+                    ENTRY(@n-9),AT(177,49,34,10),USE(DateCalc_NetDate),SKIP,RIGHT,COLOR(COLOR:BTNFACE), |
                             READONLY
-                    ENTRY(@d02b),AT(222,49,44,10),USE(DateCalc_NetDate,, ?DateCalc_NetDate:d2),SKIP, |
+                    ENTRY(@d02b),AT(216,49,43,10),USE(DateCalc_NetDate,, ?DateCalc_NetDate:d2),SKIP, |
                             COLOR(COLOR:BTNFACE),READONLY
-                    STRING(@s5),AT(271,49,26,10),USE(DateCalc_NetD_DOW)                    
+                    STRING(@s9),AT(263,49),USE(DateCalc_NetD_DOW)
                 END
                 PANEL,AT(6,63,295,2),USE(?Panel_Calc2),BEVEL(0,0,0600H)
-                GROUP,AT(5,67,266,38),USE(?DateTwo_Grp)
+                GROUP,AT(5,67,299,38),USE(?DateTwo_Grp)
                     PROMPT('&Another Date('),AT(6,68),USE(?DateCalcAnother:Prompt)
                     ENTRY(@N-7),AT(60,68,28,10),USE(DateTwo_BaseMonth),RIGHT
                     ENTRY(@n-7),AT(95,68,28,10),USE(DateTwo_BaseDay),RIGHT
                     SPIN(@n4),AT(129,68,28,10),USE(DateTwo_BaseYear),RIGHT,RANGE(1801,9999)
-                    STRING(') = '),AT(165,69)
-                    ENTRY(@n-9),AT(180,68,37,10),USE(DateTwo_BaseDate),SKIP,RIGHT
-                    ENTRY(@d02b),AT(222,68,44,10),USE(DateTwo_BaseDate,, ?DateTwo_BaseDate:d2),SKIP
-                    STRING(@s5),AT(271,68,26,10),USE(DateTwo_Base_DOW)
-                    PROMPT('Change +/-'),AT(137,80),USE(?DateTwo_Plus:Prompt)
-                    ENTRY(@n-7),AT(180,80,37,10),USE(DateTwo_PlusDayz),RIGHT
-                    ENTRY(@n-9),AT(180,92,37,10),USE(DateTwo_NetDate),SKIP,RIGHT,COLOR(COLOR:BTNFACE), |
+                    STRING(') = '),AT(162,69)
+                    ENTRY(@n-9),AT(177,68,34,10),USE(DateTwo_BaseDate),SKIP,RIGHT
+                    ENTRY(@d02b),AT(216,68,43,10),USE(DateTwo_BaseDate,, ?DateTwo_BaseDate:d2),SKIP
+                    STRING(@s9),AT(263,68,,10),USE(DateTwo_Base_DOW)
+                    PROMPT('Change +/-'),AT(134,80),USE(?DateTwo_Plus:Prompt)
+                    ENTRY(@n-7),AT(177,80,34,10),USE(DateTwo_PlusDayz),RIGHT
+                    ENTRY(@n-9),AT(177,92,34,10),USE(DateTwo_NetDate),SKIP,RIGHT,COLOR(COLOR:BTNFACE), |
                             READONLY
-                    ENTRY(@d02b),AT(222,92,44,10),USE(DateTwo_NetDate,, ?DateTwo_NetDate:d2),SKIP, |
+                    ENTRY(@d02b),AT(216,92,43,10),USE(DateTwo_NetDate,, ?DateTwo_NetDate:d2),SKIP, |
                             COLOR(COLOR:BTNFACE),READONLY
-                    STRING(@s5),AT(271,92,26,10),USE(DateTwo_NetD_DOW)
+                    STRING(@s9),AT(263,92,,10),USE(DateTwo_NetD_DOW)
                     PROMPT('DATE() when Month is Zero or Negative returns -1. Day of Zero or Negativ' & |
                             'e works. See DateFixed() on upper right.'),AT(6,84,123,19),USE(?DateCalc_DatePromblems:FYI) |
                             ,FONT(,8)
                 END
-                CHECK('Use DateFixed()'),AT(180,15),USE(DateCalc_UseDateFixed),SKIP,FONT(,9)
+                CHECK('Use DateFixed()'),AT(177,15),USE(DateCalc_UseDateFixed),SKIP,FONT(,9)
                 CHECK('Use Version 2'),AT(243,15),USE(DateCalc_UseDateFixV2),SKIP,FONT(,9)
                 PANEL,AT(6,107,295,2),USE(?Panel_Calc3),BEVEL(0,0,0600H)
-                GROUP,AT(5,110,286,23),USE(?CalcGroup_Adjust)
+                GROUP,AT(5,110,299,21),USE(?CalcGroup_Adjust)
                     PROMPT('Date to &Adjust:'),AT(6,113),USE(?DateToAdjust:Prompt)
-                    ENTRY(@d02b),AT(59,112,46,10),USE(DateCalc_AdjDtD1)
+                    ENTRY(@d02b),AT(59,112,44,10),USE(DateCalc_AdjDtD1)
                     STRING('plus/minus'),AT(108,113)
-                    ENTRY(@n-8),AT(149,112,33,10),USE(DateCalc_AdjDtDays)
-                    STRING('days ='),AT(186,113)
-                    ENTRY(@d02b),AT(213,112,44,10),USE(DateCalc_AdjDtD2),COLOR(COLOR:BTNFACE),READONLY
+                    ENTRY(@n-8),AT(150,112,33,10),USE(DateCalc_AdjDtDays)
+                    STRING('days ='),AT(188,113)
+                    ENTRY(@d02b),AT(216,112,43,10),USE(DateCalc_AdjDtD2),COLOR(COLOR:BTNFACE),READONLY
                     STRING(@n9b),AT(44,122,38,9),USE(DateCalc_AdjDtD1,, ?DateCalc_AdjDtD1:2),TRN,RIGHT
-                    STRING(@n9b),AT(202,122,34,9),USE(DateCalc_AdjDtD2,, ?DateCalc_AdjDtD2:2),TRN,RIGHT
-                    STRING(@s5),AT(88,122,26,10),USE(DateCalc_AdjDtD1_DOW)
-                    STRING(@s5),AT(242,122,26,10),USE(DateCalc_AdjDtD2_DOW)
+                    STRING(@n9b),AT(198,122,38,9),USE(DateCalc_AdjDtD2,, ?DateCalc_AdjDtD2:2),TRN,RIGHT
+                    STRING(@s9),AT(88,122,,10),USE(DateCalc_AdjDtD1_DOW)
+                    STRING(@s9),AT(263,112,,10),USE(DateCalc_AdjDtD2_DOW)
                 END
                 PANEL,AT(6,132,295,2),USE(?Panel_Calc4),BEVEL(0,0,0600H)
-                GROUP,AT(5,134,286,24),USE(?CalcGroup_DaysBtw)
+                GROUP,AT(5,134,299,24),USE(?CalcGroup_DaysBtw)
                     PROMPT('Days Bet&ween:'),AT(7,137,49),USE(?DaysBtw:Prompt)
-                    ENTRY(@d02b),AT(60,137,45,10),USE(DateCalc_DBtwD1)
+                    ENTRY(@d02b),AT(59,137,44,10),USE(DateCalc_DBtwD1)
                     STRING('minus'),AT(110,137)
-                    ENTRY(@d02b),AT(134,137,46,10),USE(DateCalc_DBtwD2)
-                    STRING('='),AT(185,137)
-                    ENTRY(@n-10),AT(197,137,40,10),USE(DateCalc_DBtwDdays),COLOR(COLOR:BTNFACE),READONLY
-                    ENTRY(@s16),AT(197,147,80,10),USE(DateCalc_DBtwDAge),TRN,COLOR(COLOR:BTNFACE), |
+                    ENTRY(@d02b),AT(136,137,44,10),USE(DateCalc_DBtwD2)
+                    STRING('='),AT(186,137)
+                    ENTRY(@n-10),AT(196,137,40,10),USE(DateCalc_DBtwDdays),COLOR(COLOR:BTNFACE),READONLY
+                    ENTRY(@s16),AT(241,137,62,10),USE(DateCalc_DBtwDAge),TRN,COLOR(COLOR:BTNFACE), |
                             TIP('AGE() Function'),READONLY
-                    STRING(@n9b),AT(44,147,38),USE(DateCalc_DBtwD1,, ?DateCalc_DBtwD1:2),RIGHT
-                    STRING(@n9b),AT(118,147,38),USE(DateCalc_DBtwD2,, ?DateCalc_DBtwD2:2),RIGHT
-                    STRING(@s5),AT(88,147,26,10),USE(DateCalc_DBtwD1_DOW)
-                    STRING(@s5),AT(162,147,26,10),USE(DateCalc_DBtwD2_DOW)
+                    STRING(@n9b),AT(43,147,38),USE(DateCalc_DBtwD1,, ?DateCalc_DBtwD1:2),RIGHT
+                    STRING(@n9b),AT(120,147,38),USE(DateCalc_DBtwD2,, ?DateCalc_DBtwD2:2),TRN,RIGHT
+                    STRING(@s9),AT(87,147,,10),USE(DateCalc_DBtwD1_DOW),TRN
+                    STRING(@s9),AT(165,147,,10),USE(DateCalc_DBtwD2_DOW)
                 END
                 PANEL,AT(6,159,295,2),USE(?Panel_Calc5),BEVEL(0,0,0600H)
                 PROMPT('E&valuate:'),AT(7,163),USE(?EvalCalc_Input:Prompt)
@@ -557,13 +557,13 @@ Window WINDOW('Date Time Number Picture Tool'),AT(,,310,193),GRAY,AUTO,SYSTEM,IC
         OF ?DateCalc_DBtwD1 OROF ?DateCalc_DBtwD2
             DateCalc_DBtwDdays = DateCalc_DBtwD1 - DateCalc_DBtwD2    !Days Between
             DateCalc_DBtwDAge  = CHOOSE(DateCalc_DBtwDdays<0,'-'& AGE(DateCalc_DBtwD1,DateCalc_DBtwD2) ,AGE(DateCalc_DBtwD2,DateCalc_DBtwD1))
-            DateCalc_DBtwD1_DOW = DOWNumAndName(DateCalc_DBtwD1)
-            DateCalc_DBtwD2_DOW = DOWNumAndName(DateCalc_DBtwD2)
+            DateCalc_DBtwD1_DOW = DOWNumInfo(DateCalc_DBtwD1)
+            DateCalc_DBtwD2_DOW = DOWNumInfo(DateCalc_DBtwD2)
 
         OF ?DateCalc_AdjDtD1 TO ?DateCalc_AdjDtDays
             DateCalc_AdjDtD2 = DateCalc_AdjDtD1 + DateCalc_AdjDtDays  !Days Adjust
-            DateCalc_AdjDtD1_DOW = DOWNumAndName(DateCalc_AdjDtD1)
-            DateCalc_AdjDtD2_DOW = DOWNumAndName(DateCalc_AdjDtD2)
+            DateCalc_AdjDtD1_DOW = DOWNumInfo(DateCalc_AdjDtD1)
+            DateCalc_AdjDtD2_DOW = DOWNumInfo(DateCalc_AdjDtD2)
 
         OF ?EvalCalc_Input ; EvalCalc_Result=EVALUATE(EvalCalc_Input) 
                              IF ERRORCODE() THEN EvalCalc_Result='Error '& ErrorCode() &' '& Error() . 
@@ -697,8 +697,8 @@ NetTxt STRING(16)
     IF BAND(KEYSTATE(),4000h)=4000h                         THEN Clr_Back = -1 ; Clr_Text = -1.     !Scroll Lock ON does not Warn to allow Screen Captures
     ?DateCalc_PlusMonth{PROP:Color}  = Clr_Back ; ?DateCalc_PlusMonth{PROP:FontColor}  = Clr_Text
     ?MonthNegativeFixBtn{PROP:Color} = Clr_Back ; ?MonthNegativeFixBtn{PROP:FontColor} = Clr_Text 
-    DateCalc_Base_DOW = DOWNumAndName(DateCalc_BaseDate)
-    DateCalc_NetD_DOW = DOWNumAndName(DateCalc_NetDate)
+    DateCalc_Base_DOW = DOWNumInfo(DateCalc_BaseDate)
+    DateCalc_NetD_DOW = DOWNumInfo(DateCalc_NetDate)
     IF DateCalc_NetDate>=4 AND DateCalc_BaseDate>=4 THEN 
        NetChg = DateCalc_NetDate - DateCalc_BaseDate
        NetTxt = CHOOSE(NetChg<0,'','+') & NetChg
@@ -708,8 +708,8 @@ NetTxt STRING(16)
 
 DateTwo_NetDate_Rtn ROUTINE 
     DateTwo_NetDate  = DOO.DateOrDateFixed(DateTwo_BaseMonth,DateTwo_BaseDay,DateTwo_BaseYear) + DateTwo_PlusDayz
-    DateTwo_Base_DOW = DOWNumAndName(DateTwo_BaseDate)
-    DateTwo_NetD_DOW = DOWNumAndName(DateTwo_NetDate)    
+    DateTwo_Base_DOW = DOWNumInfo(DateTwo_BaseDate)
+    DateTwo_NetD_DOW = DOWNumInfo(DateTwo_NetDate)    
     EXIT
 
 !-----------------------------------------
@@ -1352,12 +1352,14 @@ DOWName     PROCEDURE(LONG Date2Dow)!,STRING
     IF Date2Dow < 4 THEN RETURN ''.
     RETURN CHOOSE(Date2Dow % 7 + 1,'Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday')
 
-DOWNumAndName  PROCEDURE(LONG Date2Dow)!,STRING    !Return "# Xxx" e.g. "3 Wed" to put on Calc Tab
+DOWNumInfo  PROCEDURE(LONG Date2Dow)!,STRING    !Return "DOW #%7 #Ord" e.g. "Wed 3 2nd" to put on Calc Tab for Dev
 DowNum LONG,AUTO
     CODE
     IF Date2Dow < 4 THEN RETURN ''.
     DowNum = Date2Dow % 7
-    RETURN DowNum &' '& CHOOSE(DowNum + 1,'Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday')
+    RETURN SUB(CHOOSE(DowNum + 1,'Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'),1,3) & |
+           ' '& DowNum & |              !The %7 DOW so 0-6
+           ' '& DOWOrdinal(Date2Dow)    !The Ordinal so 1st 2nd 
     
 DOWOrdinal  PROCEDURE(LONG Date2Dow, BOOL OrdinalWord=0)!,STRING     !Return Original 1st 2nd 3rd or First Second
 DowNum LONG,AUTO
