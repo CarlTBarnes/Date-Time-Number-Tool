@@ -3,10 +3,10 @@
 !Test Date Calculations with DATE() function to see if they workas expected. 
 
     PROGRAM
-    INCLUDE 'keycodes.clw'
+    INCLUDE('keycodes.clw')
 
-_WndPrvInclude_     EQUATE(1)                   !Uncomment these 2 lines to add Wnd Preview Class
-    Include('CbWndPreview.inc'),ONCE            ! https://github.com/CarlTBarnes/WindowPreview
+!_WndPrvInclude_     EQUATE(1)                   !Uncomment these 2 lines to add Wnd Preview Class
+!    Include('CbWndPreview.inc'),ONCE            ! https://github.com/CarlTBarnes/WindowPreview
     COMPILE('!* WndPrvCls *',_WndPrvInclude_) 
 WndPrvCls   CBWndPreviewClass,THREAD            
              !* WndPrvCls *
